@@ -51,5 +51,5 @@ Copy the file `LG+G_ph/inBV/in.BV` to the folder for MCMCTree `dating/LG+G/combi
 mcmctree mcmctree.ctl
 ```
 
-Then compare the results with those in the folder `ori/` which uses Codeml to calculate the Hessian.
+Then compare the results with those in the folder `ori/` which uses Codeml to calculate the Hessian. Don't they look very similar?
 
