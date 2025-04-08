@@ -21,9 +21,11 @@ Ensure these tools are installed:
 
 ## Quick-start
 1. Preparation
+
 Get the species tree from `MCMCTree` or `Codeml`. This can be done by running `MCMCtree` with `usedata = 3` in mcmctree.ctl then run `sed !4d out.BV > ref.tre`. This step is important as *phyloHessian* uses R package `ape` to get the order of tips which are generally different from that used by PAML. *PhyloHessian* will automatically identify any inconsistency and translate the `ape` way to the `PAML` way.
 
 2. Run the following 
+
 ```bash
 ruby ../phyloHessianWrapper.rb \
   -s sim/alignment/combined.fas \
@@ -33,4 +35,15 @@ ruby ../phyloHessianWrapper.rb \
   --force \
   --cpu 10
 ```
-`
+
+3. Check results (optional)
+
+Compare the lnL of the tree calculated by *phyloHessian* from `LG+G_ph/inBV/info` and that calculated by IQ-Tree (`LG+G_ph/iqtree/iqtree.log`). They should be almost the same.
+
+4. run MCMCTree
+
+Copy the file `LG+G_ph/inBV/in.BV` to the folder for MCMCTree. Make sure that `usedata = 2 in.BV 3` is specified in the control file `mcmctree.ctl`. Then run in Bash
+```bash
+mcmctree mcmctree.ctl
+```
+
