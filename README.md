@@ -24,7 +24,7 @@ Ensure these tools are installed:
 
 Get the species tree from `MCMCTree` or `Codeml`. This can be done by running `MCMCtree` with `usedata = 3` in mcmctree.ctl then run `sed !4d out.BV > ref.tre`. This step is important as *phyloHessian* uses R package `ape` to get the order of tips which are generally different from that used by PAML. *PhyloHessian* will automatically identify any inconsistency and translate the `ape` way to the `PAML` way.
 
-2. Run the following 
+2. Run the following (with **LG+G model** and compare it with the result of `Codeml`)
 
 Enter the folder `example/` and run *phyloHessianWrapper.rb*.
 
@@ -52,4 +52,7 @@ mcmctree mcmctree.ctl
 ```
 
 Then compare the results with those in the folder `ori/` which uses Codeml to calculate the Hessian. Don't they look very similar?
+
+5. run MCMCTree with a more complex model say LG+C60+G+I
+
 
