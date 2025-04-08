@@ -46,8 +46,10 @@ Compare the lnL of the tree calculated by *phyloHessian* from `LG+G_ph/inBV/info
 
 4. run MCMCTree
 
-Copy the file `LG+G_ph/inBV/in.BV` to the folder for MCMCTree. Make sure that `usedata = 2 in.BV 3` is specified in the control file `mcmctree.ctl`. Then run in Bash
+Copy the file `LG+G_ph/inBV/in.BV` to the folder for MCMCTree `dating/LG+G/combined/`. Make sure that `usedata = 2 in.BV 3` is specified in the control file `mcmctree.ctl`. Then run in Bash
 ```bash
 mcmctree mcmctree.ctl
 ```
+
+Then compare the results with those in the folder `ori/` which uses Codeml to calculate the Hessian.
 
