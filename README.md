@@ -1,12 +1,36 @@
-# phyloHessianWrapper
+# PhyloHessianWrapper
+
+A computational pipeline for phylogenetic Hessian matrix estimation, enabling divergence time uncertainty quantification under complex substitution models.
+
+## Table of Contents
+- [Installation](#installation)
+- [Quick Start](#Quick-start)
+- [Detailed Usage](#detailed-usage)
+- [Output Files](#output-files)
 
 ## Installation
-Run the following to check dependencies are installed and if any not installed, run the cmd to install them.
-`additional_scripts/check_dependency.rb`
+```bash
+additional_scripts/check_dependency.rb
+```
 
-# How to run phyloHessian
-1. Get the species tree from MCMCTree or CODEML. This can be done by running MCMCtree with `usedata = 3` in mcmctree.ctl then run `sed !4d out.BV > ref.tre`. This step is important as *phyloHessian* uses R package `ape` the correct order.
+### Dependencies
+Ensure these tools are installed:
+- Ruby (≥ 2.0)
+- R (≥ 4.0) with `ape` package
+- IQ-Tree2 (≥ 2.0) or PhyML (≥ 3.1)
 
-2. Run the following wrapper script. It calls IQ-Tree or PhyML to obtain the MLEs of all parameters (tree lengths and others) given the fixed tree topology, then call *phyloHessian* generate the Gradients (*g*), Hessian matrix (*H*) for the branch lengths conditional on other parameters fixed.
-`ruby ~/lab-tools/dating/phyloHessian/phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+G --outdir ph --force --cpu 10 `
+## Quick-start
+1. Preparation
+Get the species tree from `MCMCTree` or `Codeml`. This can be done by running `MCMCtree` with `usedata = 3` in mcmctree.ctl then run `sed !4d out.BV > ref.tre`. This step is important as *phyloHessian* uses R package `ape` to get the order of tips which are generally different from that used by PAML. *PhyloHessian* will automatically identify any inconsistency and translate the `ape` way to the `PAML` way.
 
+2. Run the following 
+```bash
+ruby ../phyloHessianWrapper.rb \
+  -s sim/alignment/combined.fas \
+  --reftree ref.tre \
+  -m LG+G \
+  --outdir LG+G_ph \
+  --force \
+  --cpu 10
+```
+`
