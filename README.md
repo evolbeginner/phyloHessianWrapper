@@ -26,7 +26,11 @@ Get the species tree from `MCMCTree` or `Codeml`. This can be done by running `M
 
 2. Run the following 
 
+Enter the folder `example/` and run *phyloHessianWrapper.rb*.
+
 ```bash
+cd example/;
+
 ruby ../phyloHessianWrapper.rb \
   -s sim/alignment/combined.fas \
   --reftree ref.tre \
