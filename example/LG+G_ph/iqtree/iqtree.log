@@ -1,0 +1,53 @@
+IQ-TREE multicore version 2.3.4 COVID-edition for Linux x86 64-bit built Apr 26 2024
+Developed by Bui Quang Minh, James Barbetti, Nguyen Lam Tung, Olga Chernomor,
+Heiko Schmidt, Dominik Schrempf, Michael Woodhams, Ly Trong Nhan, Thomas Wong
+
+Host:    mic-r750 (AVX512, FMA3, 1007 GB RAM)
+Command: iqtree -te LG+G_ph/iqtree/iqtree.treefile -m LG+G -s sim/alignment/combined.fas -pre LG+G_ph/iqtree/iqtree -redo -wsl -quiet -mwopt -keep-ident -mdef ../substitution_model/mfm/C2.nex -blmin 4.0e-06 -T 10
+Seed:    424940 (Using SPRNG - Scalable Parallel Random Number Generator)
+Time:    Tue Apr  8 12:22:48 2025
+Kernel:  AVX+FMA - 10 threads (128 CPU cores detected)
+
+Reading alignment file sim/alignment/combined.fas ... Fasta format detected
+Reading fasta file: done in 2.69413e-05 secs
+Alignment most likely contains protein sequences
+Alignment has 5 sequences with 200 columns, 119 distinct patterns
+75 parsimony-informative, 33 singleton sites, 92 constant sites
+    Gap/Ambiguity  Composition  p-value
+Analyzing sequences: done in 5.00679e-06 secs
+   1  t5    0.00%    passed     99.73%
+   2  t4    0.00%    passed    100.00%
+   3  t1    0.00%    passed     99.84%
+   4  t3    0.00%    passed     99.98%
+   5  t2    0.00%    passed    100.00%
+****  TOTAL    0.00%  0 sequences failed composition chi2 test (p-value<5%; df=19)
+Reading model definition file ../substitution_model/mfm/C2.nex ... 87 models and 216 frequency vectors loaded
+Reading input tree file LG+G_ph/iqtree/iqtree.treefile ...
+
+NOTE: 0 MB RAM (0 GB) is required!
+WARNING: Number of threads seems too high for short alignments. Use -T AUTO to determine best number of threads.
+Estimate model parameters (epsilon = 0.010)
+1. Initial log-likelihood: -3102.339
+2. Current log-likelihood: -1341.246
+3. Current log-likelihood: -1339.430
+Optimal log-likelihood: -1339.425
+Gamma shape alpha: 0.987
+Parameters optimization took 3 rounds (0.006 sec)
+Wrote distance file to... 
+BEST SCORE FOUND : -1339.425
+Site log-likelihoods printed to LG+G_ph/iqtree/iqtree.sitelh
+Total tree length: 1.184
+
+Total number of iterations: 0
+CPU time used for tree search: 0.000 sec (0h:0m:0s)
+Wall-clock time used for tree search: 0.000 sec (0h:0m:0s)
+Total CPU time used: 0.121 sec (0h:0m:0s)
+Total wall-clock time used: 0.013 sec (0h:0m:0s)
+
+Analysis results written to: 
+  IQ-TREE report:                LG+G_ph/iqtree/iqtree.iqtree
+  Maximum-likelihood tree:       LG+G_ph/iqtree/iqtree.treefile
+  Site log-likelihoods:          LG+G_ph/iqtree/iqtree.sitelh
+  Screen log file:               LG+G_ph/iqtree/iqtree.log
+
+Date and Time: Tue Apr  8 12:22:48 2025
