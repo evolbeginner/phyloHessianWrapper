@@ -1,3 +1,5 @@
+phyloHessianWrapper.rb
+
 # PhyloHessianWrapper
 
 A computational pipeline for phylogenetic Hessian matrix estimation, enabling divergence time uncertainty quantification under complex substitution models.
@@ -7,6 +9,7 @@ A computational pipeline for phylogenetic Hessian matrix estimation, enabling di
 - [Quick Start](#Quick-start)
 - [Detailed Usage](#detailed-usage)
 - [Output Files](#output-files)
+- [Literature cited](#Literature-cited)
 
 ## Installation
 ```bash
@@ -15,8 +18,9 @@ additional_scripts/check_dependency.rb
 
 ### Dependencies
 Ensure these tools are installed:
-- Ruby (≥ 2.0)
-- R (≥ 4.0) with `ape` package
+- Julia (>=1.6)
+- Ruby (≥ 2.7)
+- R (≥ 4.0)
 - IQ-Tree2 (≥ 2.0) or PhyML (≥ 3.1)
 
 ## Quick-start
@@ -61,4 +65,7 @@ Then compare the results with those in the folder `ori/` which uses Codeml to ca
 
 5. run MCMCTree with a more complex model say LG+C60+G+I
 
+
+## Literature-cited
+Wang S. phyloHessian: a tool to calculate phylogenetic Hessian under various substitution models and links it to MCMCTree molecular clock-dating.
 
