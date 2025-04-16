@@ -63,7 +63,7 @@ mcmctree mcmctree.ctl
 
 Then compare the results with those in the folder `ori/` which uses Codeml to calculate the Hessian. Don't they look very similar?
 
-5. run MCMCTree with a more complex model say LG+C60+G+I
+5. run MCMCTree with a more complex model say LG+C60+G+I by specifying `-m LG+G` for #phyloHessianWrapper.rb#.
 
 
 ## Literature-cited
