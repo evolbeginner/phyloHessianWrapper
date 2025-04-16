@@ -5,7 +5,7 @@ puts("© Sishuo Wang [2024-2025]. All rights reserved.", "\n")
 
 
 #########################################
-# 2025-04-08
+# 2025-04-16
 
 
 #########################################
@@ -40,7 +40,7 @@ require 'getoptlong'
 require 'parallel'
 require 'colorize'
 
-require 'Dir'
+require_relative 'additional_scripts/Dir'
 
 
 #########################################
@@ -95,6 +95,16 @@ def create_phylip(seqfile)
 end
 
 
+def run_iqtree(treefile, model, pmsf, seqfile, outdirs, blmin, iqtree_add_arg0, iqtree_add_arg, cpu)
+  if ! pmsf.nil?
+    `#{IQTREE} -te #{treefile} -m #{model} -s #{seqfile} -pre #{outdirs[:iqtree]}/iqtree -redo -wsl -quiet #{iqtree_add_arg0} -T #{cpu}`
+  end
+
+  `#{IQTREE} -blfix #{treefile} -m POISSON -s #{seqfile} -pre #{outdirs[:iqtree]}/iqtree -redo -wsl -quiet #{iqtree_add_arg0} -T #{cpu}`
+  `#{IQTREE} -te #{outdirs[:iqtree]}/iqtree.treefile -m #{model} -s #{seqfile} -pre #{outdirs[:iqtree]}/iqtree -redo -wsl -quiet #{iqtree_add_arg} -blmin #{blmin} -T #{cpu}`
+end
+
+
 #########################################
 seqfile = nil
 st = 'AA'
@@ -103,6 +113,7 @@ treefile = nil
 model = 'POISSON'
 mfm = 'nothing'
 ref_treefile = nil
+phylo_prog = :iqtree
 pmsf = nil
 is_mwopt = true
 cpu = 4
@@ -149,6 +160,9 @@ opts = GetoptLong.new(
   ['--hessian_type', GetoptLong::REQUIRED_ARGUMENT],
   ['--no_mwopt', GetoptLong::NO_ARGUMENT],
   ['--iqtree_indir', GetoptLong::REQUIRED_ARGUMENT],
+  ['--phylo_prog', GetoptLong::REQUIRED_ARGUMENT],
+  ['--phyml', GetoptLong::NO_ARGUMENT],
+  ['--iqtree', GetoptLong::NO_ARGUMENT],
   ['-h', GetoptLong::NO_ARGUMENT]
 )
 
@@ -192,6 +206,12 @@ opts.each do |opt, value|
       hessian_type = value
     when '--no_mwopt'
       is_mwopt = false
+    when '--phylo_prog'
+      phylo_prog = value
+    when '--phyml'
+      phylo_prog = :phyml
+    when '--iqtree'
+      phylo_prog = :iqtree
     when '--iqtree_indir'
       iqtree_indir = value
   end
@@ -209,7 +229,7 @@ if model =~ /[+]PMSF/i
 end
 
 if ref_treefile.nil?
-  STDERR.puts "#{ref_treefile} not given! Exiting ......"
+  STDERR.puts "-r ref_treefile not given! Exiting ......"
   exit(1)
 else
   treefile = ref_treefile
@@ -246,12 +266,12 @@ else
       ;
   end
 
-  if ! pmsf.nil?
-    `#{IQTREE} -te #{treefile} -m #{model} -s #{seqfile} -pre #{outdirs[:iqtree]}/iqtree -redo -wsl -quiet #{iqtree_add_arg0} -T #{cpu}`
+  case phylo_prog
+    when :iqtree
+      run_iqtree(treefile, model, pmsf, seqfile, outdirs, blmin, iqtree_add_arg0, iqtree_add_arg, cpu)
+    when :phyml
+      run_phyml()
   end
-
-  `#{IQTREE} -blfix #{treefile} -m POISSON -s #{seqfile} -pre #{outdirs[:iqtree]}/iqtree -redo -wsl -quiet #{iqtree_add_arg0} -T #{cpu}`
-  `#{IQTREE} -te #{outdirs[:iqtree]}/iqtree.treefile -m #{model} -s #{seqfile} -pre #{outdirs[:iqtree]}/iqtree -redo -wsl -quiet #{iqtree_add_arg} -blmin #{blmin} -T #{cpu}`
 
 end
 
