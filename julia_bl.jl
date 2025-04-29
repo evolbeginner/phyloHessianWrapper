@@ -262,6 +262,7 @@ function hessian_SKT2004(bls::Vector{Float64}, pattern2::Vector)
 		h[k] += thetas .* thetas' / pattern2[k][end]
 	end
 	h = -sum(values(h)) # negative Hessian
+	gradients = -gradients
 	println()
 
 	return([h, gradients])
