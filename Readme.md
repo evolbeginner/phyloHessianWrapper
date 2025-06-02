@@ -2,7 +2,7 @@ phyloHessianWrapper.rb
 
 # PhyloHessianWrapper
 
-A computational pipeline for phylogenetic Hessian matrix estimation, enabling divergence time uncertainty quantification under complex substitution models.
+A computational tool for phylogenetic Hessian matrix estimation, enabling divergence time uncertainty quantification under complex substitution models.
 
 ## Table of Contents
 - [Installation](#installation)
