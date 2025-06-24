@@ -1,0 +1,46 @@
+#! /usr/bin/env julia
+
+
+######################################################
+using ArgParse
+
+
+######################################################
+infile = nothing
+
+opt = ArgParseSettings()
+@add_arg_table opt begin
+	"--infile", "-i"
+		help = "type of seq"
+		arg_type = String
+		default = nothing
+end
+
+opt = parse_args(opt)
+
+infile = opt["infile"]
+
+
+######################################################
+open(infile) do f
+	#daa[ 1*20+ 0] =   58.00; daa[ 2*20+ 0] =   54.00; daa[ 2*20+ 1] =   45.00; daa[ 3*20+ 0] =   81.00;
+	for line in eachline(f)
+		println(line)
+
+		pattern = r"daa\[\s*(\d+)\*(\d+)\+\s*(\d+)\]"
+		# Find all matches
+		matches = eachmatch(pattern, line)
+		# Extract and print the captured groups
+		for m in matches
+			println("Full match: ", m.match)
+			println("Captured groups: ", m.captures)
+		end
+		exit()
+	end
+end
+
+
+######################################################
+
+
+

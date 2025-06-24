@@ -1,0 +1,35 @@
+IQ-TREE multicore version 2.3.4 COVID-edition for Linux x86 64-bit built Apr 26 2024
+Developed by Bui Quang Minh, James Barbetti, Nguyen Lam Tung, Olga Chernomor,
+Heiko Schmidt, Dominik Schrempf, Michael Woodhams, Ly Trong Nhan, Thomas Wong
+
+Host:    mic-r750 (AVX512, FMA3, 1007 GB RAM)
+Command: iqtree -pre 1/age-10/root/sim/alignment/iqtree -af fasta -quiet --alisim 1/age-10/root/sim/tree/alignment -m LG+G -t 1/age-10/root/sim/tree/sub.tre --length 200
+Seed:    617762 (Using SPRNG - Scalable Parallel Random Number Generator)
+Time:    Mon Apr  7 17:10:37 2025
+Kernel:  AVX+FMA - 1 threads (128 CPU cores detected)
+
+[Alignment Simulator] Executing
+ - Tree filepath: 1/age-10/root/sim/tree/sub.tre
+ - Length of output sequences: 200
+ - Model: LG+G
+ - Number of output datasets: 1
+SUBSTITUTION PROCESS
+--------------------
+
+Model of substitution: LG+G4
+
+State frequencies: (model)
+
+Model of rate heterogeneity: Gamma with 4 categories
+Gamma shape alpha: 1.000
+
+ Category  Relative_rate  Proportion
+  1         0.137          0.250
+  2         0.477          0.250
+  3         1.000          0.250
+  4         2.386          0.250
+Relative rates are computed as MEAN of the portion of the Gamma distribution falling in the category.
+
+[Alignment Simulator] Done
+Simulation time: 0.008s
+Date and Time: Mon Apr  7 17:10:37 2025

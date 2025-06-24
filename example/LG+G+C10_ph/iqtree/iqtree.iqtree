@@ -1,0 +1,98 @@
+IQ-TREE 3.0.1 built May  5 2025
+
+Input file name: sim/alignment/combined.fas
+User tree file name: LG+G+C10_ph/iqtree/iqtree.treefile
+Type of analysis: tree reconstruction
+Random seed number: 831527
+
+REFERENCES
+----------
+
+To cite IQ-TREE 3 please use:
+
+Thomas K.F. Wong, Nhan Ly-Trong, Huaiyan Ren, Hector Banos, Andrew J. Roger,
+Edward Susko, Chris Bielow, Nicola De Maio, Nick Goldman, Matthew W. Hahn,
+Gavin Huttley, Robert Lanfear, Bui Quang Minh (2025)
+IQ-TREE 3: Phylogenomic Inference Software using Complex Evolutionary Models.
+Submitted.
+
+Please also cite the following paper(s) for the feature(s) that you used:
+
+SEQUENCE ALIGNMENT
+------------------
+
+Input data: 5 sequences with 200 amino-acid sites
+Number of constant sites: 92 (= 46% of all sites)
+Number of invariant (constant or ambiguous constant) sites: 92 (= 46% of all sites)
+Number of parsimony informative sites: 75
+Number of distinct site patterns: 119
+
+SUBSTITUTION PROCESS
+--------------------
+
+Mixture model of substitution: MIX{LG+FC10pi1,LG+FC10pi2,LG+FC10pi3,LG+FC10pi4,LG+FC10pi5,LG+FC10pi6,LG+FC10pi7,LG+FC10pi8,LG+FC10pi9,LG+FC10pi10}+G4
+
+  No  Component      Rate    Weight   Parameters
+   1  LG+FC10pi1    1.0000   0.0256   LG+FC10pi1
+   2  LG+FC10pi2    1.0000   0.4358   LG+FC10pi2
+   3  LG+FC10pi3    1.0000   0.0000   LG+FC10pi3
+   4  LG+FC10pi4    1.0000   0.1436   LG+FC10pi4
+   5  LG+FC10pi5    1.0000   0.0648   LG+FC10pi5
+   6  LG+FC10pi6    1.0000   0.0786   LG+FC10pi6
+   7  LG+FC10pi7    1.0000   0.1194   LG+FC10pi7
+   8  LG+FC10pi8    1.0000   0.0358   LG+FC10pi8
+   9  LG+FC10pi9    1.0000   0.0589   LG+FC10pi9
+  10  LG+FC10pi10   1.0000   0.0374   LG+FC10pi10
+
+Model of rate heterogeneity: Gamma with 4 categories
+Gamma shape alpha: 0.7132
+
+ Category  Relative_rate  Proportion
+  1         0.0770         0.2500
+  2         0.3697         0.2500
+  3         0.9296         0.2500
+  4         2.6237         0.2500
+Relative rates are computed as MEAN of the portion of the Gamma distribution falling in the category.
+
+USER TREE
+---------
+
+Log-likelihood of the tree: -1340.6629 (s.e. 49.7885)
+Unconstrained log-likelihood (without tree): -894.3635
+Number of free parameters (#branches + #model parameters): 17
+Akaike information criterion (AIC) score: 2715.3259
+Corrected Akaike information criterion (AICc) score: 2718.6885
+Bayesian information criterion (BIC) score: 2771.3973
+
+Total tree length (sum of branch lengths): 1.6211
+Sum of internal branch lengths: 1.3444 (82.9337% of tree length)
+
+NOTE: Tree is UNROOTED although outgroup taxon 't5' is drawn at root
+
++**t5
+|
+|                                                   +-----t4
++---------------------------------------------------|
+|                                                   +----t1
+|
+|                                                     +----t3
++-----------------------------------------------------|
+                                                      +---t2
+
+Tree in newick format:
+
+(t5:0.0000089724,(t4:0.0783434638,t1:0.0712706125):0.6606240341,(t3:0.0669077350,t2:0.0601232877):0.6837759707);
+
+ALISIM COMMAND
+--------------
+Currently, we only support exporting AliSim commands automatically from the analysis for common models of DNA, Protein, Binary, and Morphological data. To simulate data from other models (mixture, lie-markov, etc), please refer to the User Manual of AliSim. Thanks!
+
+For more information on using AliSim, please visit: www.iqtree.org/doc/AliSim
+
+TIME STAMP
+----------
+
+Date and time: Tue Jun 24 06:33:45 2025
+Total CPU time used: 0.757996 seconds (0h:0m:0s)
+Total wall-clock time used: 0.08026667 seconds (0h:0m:0s)
+

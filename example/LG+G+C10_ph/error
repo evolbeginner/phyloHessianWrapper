@@ -1,0 +1,13 @@
+┌ Warning: CHOLMOD version incompatibility
+│ 
+│ Julia was compiled with CHOLMOD version 4.0.4. It is
+│ currently linked with version 5.3.1.
+│ This might cause Julia to terminate when working with
+│ sparse matrix factorizations, e.g. solving systems of
+│ equations with \.
+│ 
+│ It is recommended that you use Julia with the same major
+│ version of CHOLMOD as the one used during the build, or
+│ download the generic binaries from www.julialang.org,
+│ which ship with the correct versions of all dependencies.
+└ @ SparseArrays.CHOLMOD ~/miniconda3/envs/phyloHessian/share/julia/stdlib/v1.10/SparseArrays/src/solvers/cholmod.jl:206

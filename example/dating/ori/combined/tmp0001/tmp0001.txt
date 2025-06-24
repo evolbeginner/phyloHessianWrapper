@@ -1,0 +1,20 @@
+
+         5        119  P
+
+t5                              AAAAAAAAAA AACCDDDDDD DEEEEEEFFF FFFGGGGGHH HIIIKKKKKK KKKKLLLLLL LLLLLLLMMM MMNNNNNNPP PQQQQQQQQQ QRRSSSSSSS TTTTTTVVVV VVVVVWYYY
+t4                              AAAAAEGGKR STCSDDDKNS YDEEKKVFFL SYYAGGPTDH LIIIAKKKKL NRSTIIIILL LLLLTVVDLM MMDGNNNQDP PEEEQQQQRR SKRCDGSSST AIKTTTILTV VVVVVWHLY
+t1                              AAAAVAGGKA SACADDDKNS YDEEKKVFFL SYYAGGPNHH LIIIKKKKRL NRSSIIILAL LLLLSAIDLL MMDGNNNHDP PEEEQQQQRR SKRCEGSSVT AIKTTTVLTI LVVVVWHLY
+t3                              ALTVAAATMT SAVRDEHDDS QEEQDESFVF KFYGAGGGDH SILVQKQRQK KDYKKLVMRI LLLVLILILM MMGGDNSHPP QDKQAHQTAQ QRRENHSTVS TTISTTVIVA VILVVWLKY
+t2                              ALTVAAATTT KAARDEHDDS EEEQDESFIF KFYGAGGGDH NIVVQKQRQK KDYKELVMRI FLMVLLLMLM MVGQDNSHPP QDNQAHQTAQ QRRTNSSTVS TTISLTVIVA VILIVWYKY
+
+
+
+    7    1    1    1    1    1    1    1    1    1    1    1    1    1    4
+    1    1    1    3    1    1    1    6    1    1    1    1    6    1    1
+    1    1    1    1    1    6    1    1    1    4    1    3    1    1    1
+    7    1    1    1    1    1    1    1    1    1    1    1    1    1    2
+    1    8    1    1    1    1    1    1    1    1    3    1    1    1    1
+    3    1    1    2    4    1    1    1    1    1    1    1    1    1    1
+    1    1    5    1    1    1    7    1    1    2    1    1    1    1    1
+    8    1    1    1    2    1    2    2    1    3    2    1    1    5
+

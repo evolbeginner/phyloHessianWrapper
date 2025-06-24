@@ -1,0 +1,34 @@
+1007824
+/mnt/hd1/home/sishuo/project/asr-hessian/test/paml-comparison/tip5_AA200/1/age-10/root/dating/ori/combined/disabled_bin/codeml
+MCMCTREE in paml version 4.10.7, June 2023
+
+Reading options from mcmctree.ctl..
+finetune is deprecated now.
+
+Reading main tree.
+(t5, ((t4, t1), (t3, t2)));
+   0   0   0   0
+   0   0   0   0
+   0   0   0   0
+
+duplication dating:  0 node ages are mirrored
+
+Reading sequence data..  1 loci
+
+
+*** Locus 1 ***
+ns = 5  	ls = 200
+Reading sequences, sequential format..
+Reading seq # 1: t5       Reading seq # 2: t4       Reading seq # 3: t1       Reading seq # 4: t3       Reading seq # 5: t2       
+Sequences read..
+Counting site patterns..  0:00
+Compressing,    119 patterns at    200 /    200 sites (100.0%),  0:00
+Collecting fpatt[] & pose[],    119 patterns at    200 /    200 sites (100.0%),  0:00
+Counting frequencies..
+119 patterns, clean
+
+
+
+*** Locus 1 ***
+running codeml tmp0001.ctl
+file rst2 not found!
