@@ -1,0 +1,61 @@
+IQ-TREE version 3.0.1 for Linux x86 64-bit built May  5 2025
+Developed by Bui Quang Minh, Thomas Wong, Nhan Ly-Trong, Huaiyan Ren
+Contributed by Lam-Tung Nguyen, Dominik Schrempf, Chris Bielow,
+Olga Chernomor, Michael Woodhams, Diep Thi Hoang, Heiko Schmidt
+
+Host:    mic-r750 (AVX512, FMA3, 1007 GB RAM)
+Command: /home/testing/bin/iqtree3_intel -s sim/alignment/combined.phy -m ELM+G{0.987} -te sim/tree/time.tre --dating mcmctree --prefix IQ2MC/IQ2MC -redo
+Seed:    760812 (Using SPRNG - Scalable Parallel Random Number Generator)
+Time:    Tue Jun 24 08:02:30 2025
+Kernel:  AVX+FMA - 1 threads (128 CPU cores detected)
+
+HINT: Use -nt option to specify number of threads because your CPU has 128 cores!
+HINT: -nt AUTO will automatically determine the best number of threads to use.
+
+Reading alignment file sim/alignment/combined.phy ... Phylip format detected
+Alignment most likely contains protein sequences
+Constructing alignment: done in 9.906e-05 secs using 49.46% CPU
+Alignment has 5 sequences with 200 columns, 119 distinct patterns
+75 parsimony-informative, 33 singleton sites, 92 constant sites
+    Gap/Ambiguity  Composition  p-value
+Analyzing sequences: done in 4.20201e-06 secs using 47.6% CPU
+   1  t5    0.00%    passed     99.73%
+   2  t4    0.00%    passed    100.00%
+   3  t1    0.00%    passed     99.84%
+   4  t3    0.00%    passed     99.98%
+   5  t2    0.00%    passed    100.00%
+****  TOTAL    0.00%  0 sequences failed composition chi2 test (p-value<5%; df=19)
+Checking for duplicate sequences: done in 8.42905e-06 secs using 47.45% CPU
+Reading input tree file sim/tree/time.tre ... rooted tree
+
+NOTE: 0 MB RAM (0 GB) is required!
+Estimate model parameters (epsilon = 0.010)
+1. Initial log-likelihood: -1953.127
+2. Current log-likelihood: -1420.175
+3. Current log-likelihood: -1416.613
+Optimal log-likelihood: -1416.613
+Gamma shape alpha: 0.987
+Parameters optimization took 3 rounds (0.006 sec)
+Wrote distance file to... 
+BEST SCORE FOUND : -1416.613
+Total tree length: 1.123
+
+Total number of iterations: 0
+CPU time used for tree search: 0.000 sec (0h:0m:0s)
+Wall-clock time used for tree search: 0.000 sec (0h:0m:0s)
+Total CPU time used: 0.007 sec (0h:0m:0s)
+Total wall-clock time used: 0.010 sec (0h:0m:0s)
+
+--- Generating the gradients and the Hessian for MCMCTree ---
+--- Completed the gradients and the Hessian generation ---
+
+Gradients and Hessians written to: IQ2MC/IQ2MC.mcmctree.hessian
+Ctl file for MCMCTree written to: IQ2MC/IQ2MC.mcmctree.ctl
+
+
+Analysis results written to: 
+  IQ-TREE report:                IQ2MC/IQ2MC.iqtree
+  Maximum-likelihood tree:       IQ2MC/IQ2MC.treefile
+  Screen log file:               IQ2MC/IQ2MC.log
+
+Date and Time: Tue Jun 24 08:02:30 2025
