@@ -1,5 +1,3 @@
-phyloHessianWrapper.rb
-
 # PhyloHessianWrapper
 
 A computational tool for phylogenetic Hessian matrix estimation, enabling divergence time inference under (complex) amino acid substitution models with MCMCtree.
