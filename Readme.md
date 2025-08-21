@@ -88,6 +88,10 @@ Then compare the results with those in the folder `ori/` which uses Codeml to ca
    *    Defauly: None.
     
 **Optional arguments**
+*   `--hessian_type`
+    *   Options: STK2004 (outer product, default in `CODEML`) or fd (calculation on the 2nd-order derivative directly, much slower)
+    *   Default: STK2004
+
 *   `--cpu <value>`: Number of threads to use.
     *   Default: 1
 
