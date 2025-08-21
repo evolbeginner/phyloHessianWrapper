@@ -1,0 +1,53 @@
+IQ-TREE version 3.0.1 for Linux x86 64-bit built May  5 2025
+Developed by Bui Quang Minh, Thomas Wong, Nhan Ly-Trong, Huaiyan Ren
+Contributed by Lam-Tung Nguyen, Dominik Schrempf, Chris Bielow,
+Olga Chernomor, Michael Woodhams, Diep Thi Hoang, Heiko Schmidt
+
+Host:    mic-r750 (AVX512, FMA3, 1007 GB RAM)
+Command: /mnt/hd1/home/testing/bin/iqtree3_intel -te LG+G_ph-ref/iqtree/iqtree.treefile -m LG+G -s sim/alignment/combined.fas -pre LG+G_ph-ref/iqtree/iqtree -redo -wsl -quiet -mwopt -keep-ident -blmin 4.0e-06 -T 5
+Seed:    219564 (Using SPRNG - Scalable Parallel Random Number Generator)
+Time:    Thu Aug 21 04:02:34 2025
+Kernel:  AVX+FMA - 5 threads (128 CPU cores detected)
+
+Reading alignment file sim/alignment/combined.fas ... Fasta format detected
+Reading fasta file: done in 3.24957e-05 secs using 98.47% CPU
+Alignment most likely contains protein sequences
+Constructing alignment: done in 0.000145698 secs using 99.52% CPU
+Alignment has 5 sequences with 200 columns, 119 distinct patterns
+75 parsimony-informative, 33 singleton sites, 92 constant sites
+    Gap/Ambiguity  Composition  p-value
+Analyzing sequences: done in 7.60891e-06 secs using 78.85% CPU
+   1  t5    0.00%    passed     99.73%
+   2  t4    0.00%    passed    100.00%
+   3  t1    0.00%    passed     99.84%
+   4  t3    0.00%    passed     99.98%
+   5  t2    0.00%    passed    100.00%
+****  TOTAL    0.00%  0 sequences failed composition chi2 test (p-value<5%; df=19)
+Reading input tree file LG+G_ph-ref/iqtree/iqtree.treefile ...
+
+NOTE: 0 MB RAM (0 GB) is required!
+Estimate model parameters (epsilon = 0.010)
+1. Initial log-likelihood: -3102.339
+2. Current log-likelihood: -1341.246
+3. Current log-likelihood: -1339.430
+Optimal log-likelihood: -1339.425
+Gamma shape alpha: 0.987
+Parameters optimization took 3 rounds (0.008 sec)
+Wrote distance file to... 
+BEST SCORE FOUND : -1339.425
+Site log-likelihoods printed to LG+G_ph-ref/iqtree/iqtree.sitelh
+Total tree length: 1.184
+
+Total number of iterations: 0
+CPU time used for tree search: 0.000 sec (0h:0m:0s)
+Wall-clock time used for tree search: 0.000 sec (0h:0m:0s)
+Total CPU time used: 0.053 sec (0h:0m:0s)
+Total wall-clock time used: 0.015 sec (0h:0m:0s)
+
+Analysis results written to: 
+  IQ-TREE report:                LG+G_ph-ref/iqtree/iqtree.iqtree
+  Maximum-likelihood tree:       LG+G_ph-ref/iqtree/iqtree.treefile
+  Site log-likelihoods:          LG+G_ph-ref/iqtree/iqtree.sitelh
+  Screen log file:               LG+G_ph-ref/iqtree/iqtree.log
+
+Date and Time: Thu Aug 21 04:02:34 2025

@@ -1,0 +1,1 @@
+ruby ../phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+G --outdir LG+G_ph --force --cpu 10

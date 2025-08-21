@@ -1,0 +1,33 @@
+Executing: iqtree -te LG+G_ph-ref/iqtree/iqtree.treefile -m LG+G -s sim/alignment/combined.fas -pre LG+G_ph-ref/iqtree/iqtree -redo -wsl -quiet -mwopt -keep-ident -blmin 4.0e-06 -T 5
+
+Executing: Rscript ../do_bl_my_try.R -s sim/alignment/combined.fas -t LG+G_ph-ref/iqtree/iqtree.treefile --cpu 5 --julia_outdir LG+G_ph-ref/julia --force --type AA
+Executing: bash ../additional_scripts/generate_branch_out_mat.sh -t LG+G_ph-ref/iqtree/iqtree.treefile --ref_tree ref.tre --outdir LG+G_ph-ref/bl --force
+Rscript ../additional_scripts/align_bl.R LG+G_ph-ref/iqtree/iqtree.treefile LG+G_ph-ref/bl/branch_out > LG+G_ph-ref/bl/branch_out.matrix
+Executing: julia -t 5 ../julia_bl.jl --basics_indir LG+G_ph-ref/julia -t AA --tree LG+G_ph-ref/iqtree/iqtree.treefile -b LG+G_ph-ref/bl/branch_out.matrix -m LG --mfm nothing --outdir LG+G_ph-ref/inBV --force  --hessian_type STK2004 2>LG+G_ph-ref/error
+┌ Warning: CHOLMOD version incompatibility
+│ 
+│ Julia was compiled with CHOLMOD version 4.0.4. It is
+│ currently linked with version 3.0.14.
+│ This might cause Julia to terminate when working with
+│ sparse matrix factorizations, e.g. solving systems of
+│ equations with \.
+│ 
+│ It is recommended that you use Julia with the same major
+│ version of CHOLMOD as the one used during the build, or
+│ download the generic binaries from www.julialang.org,
+│ which ship with the correct versions of all dependencies.
+└ @ SparseArrays.CHOLMOD ~/miniconda3/share/julia/stdlib/v1.10/SparseArrays/src/solvers/cholmod.jl:206
+
+2025-08-21T04:02:40.019
+
+rs:	[0.1344, 0.4729, 0.9978, 2.3949]
+props:	[0.25, 0.25, 0.25, 0.25]
+freqs:	Float64[]
+Qrs:	Float64[]
+2025-08-21T04:02:40.537
+2025-08-21T04:02:45.150
+
+best lnL	-1339.4253736980766	
+
+2025-08-21T04:02:46.902
+
