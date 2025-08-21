@@ -1,6 +1,6 @@
 # PhyloHessianWrapper
 
-A computational tool for phylogenetic Hessian matrix estimation, enabling divergence time inference under (complex) amino acid substitution models with MCMCtree.
+A computational tool for phylogenetic Hessian matrix estimation, enabling divergence time inference under (complex) amino acid substitution models with MCMCtree's approximate likelihood method ([dos Reis et al., 2017](#ref-dosreis_2017)).
 
 ## Table of Contents
 - [Installation](#Installation)
