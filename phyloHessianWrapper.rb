@@ -37,7 +37,7 @@ RUBY = 'ruby'
 REGULAR_DIR = File.join(DIR, 'substitution_model', 'regular')
 MFM_DIR = File.join(DIR, 'substitution_model', 'mfm')
 
-DO_MCMCTREE = File.expand_path("~/lab-tools/dating/do_mcmctree.rb")
+DO_MCMCTREE = File.join(ADD_SCRIPTS_DIR, 'do_mcmctree.rb')
 MFATOPHY = File.expand_path(File.join(ADD_SCRIPTS_DIR, 'MFAtoPHY.jl'))
 
 
