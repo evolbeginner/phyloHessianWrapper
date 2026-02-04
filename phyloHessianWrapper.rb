@@ -25,7 +25,7 @@ require_relative 'additional_scripts/util'
 
 #########################################
 JULIA_BL = File.join(DIR, "julia_bl.jl")
-GEN_BASICS = File.join(DIR, 'do_bl_my_try.R')
+GEN_BASICS = File.join(DIR, 'parse_tree_seq.R')
 GEN_BRANCH = File.join(ADD_SCRIPTS_DIR, 'generate_branch_out_mat.sh')
 
 IQTREE = 'iqtree'
