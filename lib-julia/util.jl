@@ -116,6 +116,38 @@ function read_basics(basics_indir)
 end
 
 
+function read_hessian_infile(hessian_infile)
+	in_fh = open(hessian_infile, "r")
+	is_read_hessian = false
+	count = 0
+	hessian_data = Float64[]
+
+	for line in readlines(in_fh)
+		if is_read_hessian
+			if ! occursin(r"\w", line)
+				continue
+			else
+				nums = parse.(Float64, split(line, r"\s+"))
+				append!(hessian_data, nums)
+			end
+		end
+		if occursin("Hessian", line)
+			is_read_hessian = true
+		end
+	end
+	close(in_fh)
+
+	n = Int(sqrt(length(hessian_data)))
+    if n^2 != length(hessian_data)
+    	@warn "Hessian's length is not a square of a integer!"
+        return reshape(hessian_data, :, length(hessian_data) ÷ n)
+    end
+	h = reshape(hessian_data, n, n)
+
+	return(h)
+end
+
+
 ###########################################################
 function get_bl_node_rela()
 	j = 0
@@ -141,15 +173,18 @@ end
 # read the last line of the file branch_out.matrix
 function read_bls_from_branchout_matrix(infile)
 	lines = readlines(infile)
-	bls = split(lines[end], ",")
-	bls = [parse(Float64, x) for x in bls]
+	#bls = split(lines[end], ",")
+	#bls = [parse(Float64, x) for x in bls]
+	lines_with_bls = filter(line -> ! occursin(r"\s", line), lines)
+	bls_vec = map(x -> [parse(Float64, i) for i in split(x, ",")], lines_with_bls)
 end
 
 
 function get_bl_order(infile)
 	bl_order = Dict("mcmctree2ape" => Dict(), "ape2mcmctree" => Dict())
 	lines = readlines(infile)
-	for line in lines[2:end-1]
+	lines_with_tab = filter(line -> occursin(r"\t", line), lines[2:end])
+	for line in lines_with_tab
 		line_arr = split(line, "\t")
 		order1, order2 = map(x->parse(Int64,x), line_arr[(end-1):end])
 		bl_order["mcmctree2ape"][order1] = order2

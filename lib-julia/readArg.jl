@@ -13,9 +13,12 @@ type, indir = nothing, nothing
 iqtree_file = nothing
 basics_indir = nothing
 branchout_matrix = nothing
+bs_branchout_matrix = nothing
+
 hessian_outfile = nothing
 hessian_type = "SKT2004"
 hessian_infile = nothing
+is_compare = false
 
 pmsf_file = nothing
 is_pmsf = false
@@ -54,6 +57,10 @@ function parse_commandline()
 			help = "branch_out.matrix"
 			arg_type =  String
 			default = nothing
+		"--bs_branchout_matrix", "--b2"
+			help = "bs_branch_out.matrix if any"
+			arg_type =  String
+			default = nothing
 		"--model", "-m"
 			help = "substitution matrix"
 			arg_type =  String
@@ -88,9 +95,13 @@ function parse_commandline()
 			help = "read the in.BV file"
 			arg_type = String
 			default = nothing
+		"--compare"
+			help = "to compare btwn extact and approx lnL"
+			action = :store_true
 		"--transform"
 			help = "transform method"
-			action = :store_true
+			arg_type = String
+			default = nothing
     end
 
     return(parse_args(opt))
@@ -120,8 +131,8 @@ treefile = opt["tree"]
 iqtree_file = opt["iqtree"]
 phyml_file = opt["phyml"]
 branchout_matrix = opt["branchout_matrix"]
+bs_branchout_matrix = opt["bs_branchout_matrix"]
 sub_model = opt["model"]
-transform_method = "nothing"
 
 outdir = opt["outdir"]
 is_force = opt["force"]
@@ -129,6 +140,11 @@ is_tolerate = opt["tolerate"]
 #hessian_outfile = opt["hessian"]
 hessian_type = opt["hessian_type"]
 hessian_infile = opt["read_hessian"]
+
+is_compare = opt["compare"]
+if hessian_infile != nothing
+	is_compare = true
+end
 
 
 if outdir == nothing

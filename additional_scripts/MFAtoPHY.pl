@@ -1,0 +1,1 @@
+/mnt/hd1/home/sishuo/bin/sequence_processing/MFAtoPHY.pl

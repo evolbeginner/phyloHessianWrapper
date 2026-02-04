@@ -2,7 +2,7 @@
 
 
 #########################################
-# last updated 2025-08-21
+# last updated 2026-02-04
 # well logged
 
 
@@ -25,11 +25,12 @@ require_relative 'additional_scripts/util'
 
 #########################################
 JULIA_BL = File.join(DIR, "julia_bl.jl")
-GEN_BASICS = File.join(DIR, 'parse_tree_seq.R')
+GEN_BASICS = File.join(DIR, 'do_bl_my_try.R')
 GEN_BRANCH = File.join(ADD_SCRIPTS_DIR, 'generate_branch_out_mat.sh')
 
 IQTREE = 'iqtree'
 PHYML = 'phyml'
+PHYML_MIXSS = File.expand_path(File.join(ADD_SCRIPTS_DIR, 'phyml-mixSS'))
 JULIA = 'julia'
 RUBY = 'ruby'
 
@@ -37,7 +38,6 @@ REGULAR_DIR = File.join(DIR, 'substitution_model', 'regular')
 MFM_DIR = File.join(DIR, 'substitution_model', 'mfm')
 
 DO_MCMCTREE = File.expand_path("~/lab-tools/dating/do_mcmctree.rb")
-BS_INBV = File.expand_path("~/lab-tools/dating/hessian/create_hessian_by_bootstrapping.rb")
 MFATOPHY = File.expand_path(File.join(ADD_SCRIPTS_DIR, 'MFAtoPHY.jl'))
 
 
@@ -56,8 +56,14 @@ def log(message)
 end
 
 def log_error(message)
-  STDERR.puts message.red
+  STDERR.puts message.blue
   $log.puts "ERROR: #{message}"
+end
+
+def log_fatal_error(message)
+  STDERR.puts "FATAL ERROR: #{message}".red
+  $log.puts message
+  exit 1
 end
 
 def log_command(cmd)
@@ -146,9 +152,9 @@ end
 
 
 def run_phyml(treefile, model, pmsf, seqfile, outdir, blmin, iqtree_add_arg0, iqtree_add_arg, cpu)
-  if pmsf.nil?
-    log_error("-r ref_treefile not given! Exiting ......")
-    exit(1)
+  if ! pmsf.nil?
+    #log_error("-r ref_treefile not given! Exiting ......")
+    log_fatal_error('phyml does not work with pmsf')
   end
   
   phylip = create_phylip(seqfile)
@@ -158,21 +164,59 @@ def run_phyml(treefile, model, pmsf, seqfile, outdir, blmin, iqtree_add_arg0, iq
   phyml_model_arg = iqtree_to_phyml(model)
   cmd = "#{PHYML} -i #{phylip} -u #{treefile} -d aa -o lr #{phyml_model_arg}"
   
-  log_file = File.join(outdir, 'phyml_output.log')
+  #log_file = File.join(outdir, 'phyml_output.log')
+  log_file = 'phyml_output.log'
   begin
     execute_command("#{cmd} > #{log_file} 2>&1", "Running PhyML ......")
   rescue
-    cmd2 = "phyml-mixSS -i #{phylip} -u #{treefile} -d aa -o lr #{phyml_model_arg}"
+    cmd2 = "#{PHYML_MIXSS} -i #{phylip} -u #{treefile} -d aa -o lr #{phyml_model_arg}"
     log("First PhyML command failed, trying alternative: #{cmd2}")
     execute_command("#{cmd2} > #{log_file} 2>&1", "Running phyml-mixSS ......")
   end
 end
 
 
+def iqtree_to_phyml(model)
+  tokens = model.to_s.strip.split('+').reject(&:empty?)
+  sm = nil; order = []; gk = nil; ga = nil; iv = nil
+  tokens.each do |t|
+    if t =~ /\AG(\d*)(?:\{([^}]*)\})?\z/i
+      gk = ($1 && !$1.empty?) ? $1.to_i : 4
+      ga = ($2 && !$2.empty?) ? $2 : 'e'
+      order << :G unless order.include?(:G)
+    elsif t =~ /\AR(\d*)(?:\{([^}]*)\})?\z/i # for +R 
+      gk = ($1 && !$1.empty?) ? $1.to_i : 4
+      order << :G unless order.include?(:R)
+      order << '--freerates'
+    elsif t =~ /\AI(?:\{([^}]*)\})?\z/i
+      iv = ($1 && !$1.empty?) ? $1 : 'e'
+      order << :I unless order.include?(:I)
+    else
+      sm = t.upcase
+    end
+  end
+  parts = []
+  parts << "-m #{sm}" if sm
+  order.each { |blk|
+    case blk
+      when :I
+        parts << "-v #{iv || 'e'}"
+      when :G
+        parts.concat(["-c #{gk || 4}", "-a #{ga || 'e'}"])
+      when :R
+        parts.concat(["-c #{gk || 4}"])
+      else
+        parts.concat([blk])
+    end
+  }
+  parts.join(' ')
+end
+
+
 #########################################
 def show_help
   puts <<~HELP
-    #{File.basename($0)} - v0.2
+    #{File.basename($0)} - Phylogenetic analysis pipeline
 
     Usage: #{File.basename($0)} [options]
 
@@ -211,9 +255,6 @@ def show_help
 
       Run full pipeline:
         #{File.basename($0)} -s alignment.fa -t tree.nwk -r ref_tree.nwk --run_mcmctree --outdir full_analysis
-
-      Citation:
-        Wang S, Meade A. Molecular Clock Dating of Deep-Time Evolution Using Complex Mixture Models. https://www.biorxiv.org/content/10.1101/2025.07.17.665246v1. bioRxiv. 2025:2025-07.
   HELP
   exit
 end
@@ -413,6 +454,7 @@ begin
 
   phylip = create_phylip(seqfile) if phylip.nil?
   run_mcmctree(outdirs, tree_indir, phylip, clock, bd, bsn) if is_run_mcmctree
+
   STDOUT.puts "Done!" if $? == 0
 rescue => e
   log_error("Fatal error: #{e.message}")

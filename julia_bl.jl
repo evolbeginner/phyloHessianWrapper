@@ -2,9 +2,7 @@
 
 
 ######################################################################
-# v0.22.3
-# SKT2004 -> STK2004
-# lnL corrected the sign "-"
+# v0.23.2
 
 
 ######################################################################
@@ -77,6 +75,8 @@ function do_phylo_log_lk(q_pis::Vector{Any}, param::Vector{Float64}, liks_ori::A
 		weights = props
 	end
 
+	liks = similar(liks_ori)
+
 	# other related params
 	log_lk = 0.0
 	lks = zeros(Float64, length(weights))
@@ -94,13 +94,13 @@ function do_phylo_log_lk(q_pis::Vector{Any}, param::Vector{Float64}, liks_ori::A
 		U = q_pis[q_i].U; Lambda = q_pis[q_i].Lambda; U_inv = q_pis[q_i].U_inv
 		r = Qrs[q_i] * rs[r_i] # r defined
 
-		#liks = similar(liks_ori)
-		liks = copy(liks_ori)
+		#liks = copy(liks_ori)
+		copyto!(liks, liks_ori)
 		j = 0
 
 		comp = zeros(Float64, nb.tip+nb.node)
 
-		@simd for anc in ((nb.node + nb.tip):-1:(1 + nb.tip))
+		@simd for anc in ((nb.tip+nb.node):-1:(1+nb.tip))
 			children = all_children[anc]
 			m = zeros(Float64, nl, length(children))
 			@simd for i in 1:length(children)
@@ -115,12 +115,7 @@ function do_phylo_log_lk(q_pis::Vector{Any}, param::Vector{Float64}, liks_ori::A
 			comp[anc] = ifelse(anc == (1 + nb.tip), dot(Pi, m_prod), sum(m_prod))
 			liks[:, anc] = m_prod / comp[anc]
 		end
-		# very rare numerical error
-		if any(x->x<0, comp)
-			println(stderr, "Error" * "\t" * string(index) * "\t")
-			println(stderr, findall(x->x<0, comp))
-		end
-		comp[comp.<0] .= 1e-10
+		comp .= clamp.(comp, 1e-300, Inf)
 		lks[counter] = sum(log.(comp[nb.tip+1:end]))
 	end
 
@@ -176,18 +171,22 @@ end
 
 ######################################################################
 function delta_log_lk(bls::Vector{Float64}, indices::Vector{Int}, nums::Vector{Float64}, i::Int, pattern2::Vector, sub_model::String, nb::Nb, nl::Int, rs, props, inv_info, Qrs, freqs, all_children)
-    pat1, pat2 = pattern2[i]
+    site_pat, times_of_pattern = pattern2[i]
     q = is_pmsf ? q_pis_sites[i] : q_pis
-	bls_copy = copy(bls)
+
+	#bls_copy = copy(bls)
+	bls_copy = similar(bls)
+    copyto!(bls_copy, bls)
+
     bls_copy[indices] .+= nums
 
     # Pass all constant parameters as keyword arguments
-    rv = do_phylo_log_lk(q, bls_copy, pat1;
+    rv = do_phylo_log_lk(q, bls_copy, site_pat;
 						 sub_model=sub_model, nb=nb, nl=nl, all_children=all_children,
                          rs=rs, props=props, 
                          is_do_inv=inv_info[:is_do_inv],
                          inv_prop=inv_info[:inv_prop],
-                         Qrs=Qrs, freqs=freqs, index=i)[1] * pat2
+                         Qrs=Qrs, freqs=freqs, index=i)[1] * times_of_pattern
     return rv
 end
 
@@ -208,6 +207,7 @@ function hessian_STK2004(bls::Vector{Float64}, pattern2::Vector, nb::Nb, nl::Int
 		thetas = zeros(Float64, nb.branch)
 		@inbounds @simd for i in 1:nb.branch
 			step = (1 + bls[i]) ./ 1e6
+			# already considers site_pattern_freqs
 			thetas[i] = (delta_log_lk2(bls,[i],[step],k) - delta_log_lk2(bls,[i],[-step],k))/(2*step)
 		end
 		gradients[k] += thetas
@@ -270,6 +270,11 @@ end
 	new_order = [bl_order["mcmctree2ape"][k] for k in sorted_keys]
 end
 
+@inline function get_new_order_rev(bl_order::Dict{String, Dict{Any, Any}})
+	sorted_keys = sort(collect(keys(bl_order["ape2mcmctree"])))
+	new_order = [bl_order["ape2mcmctree"][k] for k in sorted_keys]
+end
+
 
 function sum_phylo_log_lk(param::Vector{Float64}, pattern2::Vector{Any})
 	# pattern2: v[1]=liks, v[2]=num
@@ -296,25 +301,73 @@ end
 
 
 ######################################################################
-function compare_true_vs_approx_lnL(bls, g, h, lnL0, sum_phylo_log_lk2, transform_method)
-	cov = -inv( Hermitian(h+Diagonal(ones(dim(h)[1]))*1e-6) )
-	println(diag(cov))
+function compare_true_vs_approx_lnL(bls_vec::Vector{Float64}, gs, hs, lnL0, sum_phylo_log_lk2, transform_method)
+
+	# important
+	bls = bls_vec
+
+	hs = [x for x in hs if x !== nothing]
+
+	is_mvn = true
+	unif_radius = 2
+
+	covs = map(x -> -inv( Hermitian(x + Diagonal(ones(dim(x)[1]))*1e-6) )*2, hs)
 
 	for i in 1:100
-		new_bls = max.(vec(rand(MvNormal(bls,cov),1)), 1e-6)
+		new_bls = copy(bls)
+		if is_mvn
+			new_bls = max.(vec(rand(MvNormal(bls,covs[1]),1)), 1e-6)
+		elseif unif_radius != nothing
+			σ = sqrt.(diag(covs[1]))
+			new_bls = [rand(max(Uniform(bls[i] - unif_radius*σ[i], 1e-6), bls[i] + unif_radius*σ[i])) for i in eachindex(bls)]
+		end
 		lnL = sum_phylo_log_lk2(new_bls)
 
-		if transform_method != nothing
-			bls2 = sqrt.(bls)
-			new_bls2, gu, hu = transform_bl(new_bls, g, h)
-			delta_bls = new_bls2 - bls2
-			lnL_approx = lnL0 + (delta_bls' * gu) + (delta_bls' * hu * delta_bls/2)
-		else
-			delta_bls = new_bls-bls
-			lnL_approx = lnL0 + (delta_bls' * g) + (delta_bls' * h * delta_bls/2)
+		lnL_approxes = Float64[]
+		for (g,h) in zip(gs, hs)
+			if transform_method != nothing
+				#println(transform_method, "!!!")
+				bls2 = sqrt.(bls) #bls2 := u
+				new_bls2, gu, hu = transform_bl(new_bls, g, h)
+				delta_bls = new_bls2 - bls2
+				lnL_approx = lnL0 + (delta_bls' * gu) + (delta_bls' * hu * delta_bls/2)
+			else
+				delta_bls = new_bls - bls
+				lnL_approx = lnL0 + (delta_bls' * g) + (delta_bls' * h * delta_bls/2)
+			end
+			push!(lnL_approxes, lnL_approx)
 		end
+		println(join(vcat("TREE$i", lnL, lnL_approxes...), "\t"))
+	end
+end
 
-		println(join([lnL, lnL_approx, lnL-lnL_approx], "\t"))
+
+function compare_true_vs_approx_lnL(bls_vec::Vector{Vector{Float64}}, gs, hs, lnL0, sum_phylo_log_lk2, transform_method)
+	hs = [x for x in hs if x !== nothing]
+
+	bls = popfirst!(bls_vec)
+	#lnL0 = sum_phylo_log_lk2(bls)
+
+	# here is for bs trees
+	for bs_bls in bls_vec[1:min(100, length(bls_vec))]
+		new_bls = copy(bs_bls)
+		lnL = sum_phylo_log_lk2(new_bls)
+
+		lnL_approxes = Float64[]
+		for (g,h) in zip(gs,hs)
+			if transform_method != nothing
+				bls2 = sqrt.(bls) # bls := u
+				new_bls2, gu, hu = transform_bl(new_bls, g, h)
+				delta_bls = new_bls2 - bls2
+				lnL_approx = lnL0 + (delta_bls' * gu) + (delta_bls' * hu * delta_bls/2)
+			else
+				delta_bls = new_bls - bls
+				lnL_approx = lnL0 + (delta_bls' * g) + (delta_bls' * h * delta_bls/2)
+			end
+			push!(lnL_approxes, lnL_approx)
+		end
+		count = length(lnL_approxes)
+		println(join(vcat("TREE$count", lnL, lnL_approxes...), "\t"))
 	end
 end
 
@@ -335,13 +388,64 @@ function transform_bl(bls, g, h)
 end
 
 
+function read_hessian_infile(hessian_infile)
+	in_fh = open(hessian_infile, "r")
+	is_read_hessian = false
+	count = 0
+	hessian_data = Float64[]
+
+	for line in readlines(in_fh)
+		line = strip(line)
+		if is_read_hessian
+			if ! occursin(r"\w", line)
+				continue
+			else
+				nums = parse.(Float64, split(line, r"\s+"))
+				append!(hessian_data, nums)
+			end
+		end
+		if occursin("Hessian", line)
+			is_read_hessian = true
+		end
+	end
+	close(in_fh)
+
+	n = Int(sqrt(length(hessian_data)))
+	if n^2 != length(hessian_data)
+		@warn "Hessian's length is not a square of a integer!"
+		return reshape(hessian_data, :, length(hessian_data) ÷ n)
+	end
+	h = reshape(hessian_data, n, n)
+
+	return(h)
+end
+
+
+function get_h_from_inBV(hessian_infile, bl_order)
+	h_from_inBV_mcmctree = hessian_infile == nothing ? nothing : read_hessian_infile(hessian_infile)
+	h_from_inBV = nothing
+	if h_from_inBV_mcmctree != nothing
+		new_bl_order_rev = get_new_order_rev(bl_order)
+		h_from_inBV = h_from_inBV_mcmctree[new_bl_order_rev, new_bl_order_rev]
+	end
+	return(h_from_inBV)
+end
+
+
 ######################################################################
 #function main(rs, props, Fs, Qrs, freqs, pattern)
 function main(nb, nl, sub_model, rs, props, Fs, Qrs, freqs, q_pis, q_pis_sites, inv_info, pattern, all_children, descendants)
+
 	pattern2 = get_liks_pattern(pattern)
 	bls = fill(0.1, nb.tip+nb.node-1)
+	bls_vec = Vector()
 
-	bls = read_bls_from_branchout_matrix(branchout_matrix)
+	# in case it contains bs trees
+	bls = read_bls_from_branchout_matrix(branchout_matrix)[1]
+	if bs_branchout_matrix != nothing
+		bls_vec = read_bls_from_branchout_matrix(bs_branchout_matrix)
+	end
+
 	# reordered according MCMCtree's order
 	bl_order = get_bl_order(branchout_matrix)
 	new_bl_order = get_new_order(bl_order)
@@ -356,12 +460,14 @@ function main(nb, nl, sub_model, rs, props, Fs, Qrs, freqs, q_pis, q_pis_sites, 
 	println(now())
 =#
 
+	sum_phylo_log_lk2 = (bls::Vector{Float64}) -> sum_phylo_log_lk(bls, pattern2)
+
 	# Hessian
 	if hessian_outfile != nothing
 		h, g, lnL0, lnLs = hessian_STK2004(bls, pattern2, nb, nl, q_pis, q_pis_sites, inv_info, all_children, descendants)
 		g_mcmctree = g[new_bl_order]
 		if occursin(r"^finite_difference|fd$", hessian_type)
-			sum_phylo_log_lk2 = (bls::Vector{Float64}) -> sum_phylo_log_lk(bls, pattern2)
+			#sum_phylo_log_lk2 = (bls::Vector{Float64}) -> sum_phylo_log_lk(bls, pattern2)
 			h = hessian_fd(bls, sum_phylo_log_lk2)
 			#h = -FiniteDiff.finite_difference_hessian(sum_phylo_log_lk2, bls)
 		end
@@ -379,16 +485,26 @@ function main(nb, nl, sub_model, rs, props, Fs, Qrs, freqs, q_pis, q_pis_sites, 
 		println(out_fh, "")
 		close(out_fh)
 
-		sorted_keys = sort(collect(keys(bl_order["mcmctree2ape"])))
-		new_order = [bl_order["mcmctree2ape"][k] for k in sorted_keys]
-		h_mcmctree = h[new_order, new_order]
+		#sorted_keys = sort(collect(keys(bl_order["mcmctree2ape"])))
+		#new_order = [bl_order["mcmctree2ape"][k] for k in sorted_keys]
+		#h_mcmctree = h[new_order, new_order]
+		h_mcmctree = h[new_bl_order, new_bl_order]
 		h_mcmctree_out = format_number.(h_mcmctree)
 
 		open(hessian_outfile, "a") do out_fh
 			writedlm(out_fh, h_mcmctree_out, ' ')
 		end
 		
-		#compare_true_vs_approx_lnL(bls, g, h, lnL0, sum_phylo_log_lk2, transform_method)
+		if is_compare
+			h_from_inBV = get_h_from_inBV(hessian_infile, bl_order)
+			if isempty(bls_vec)
+				compare_true_vs_approx_lnL(bls, [g], [h, h_from_inBV], lnL0, sum_phylo_log_lk2, transform_method)
+			else
+				gs = [g, zeros(Float64, length(g))]
+				compare_true_vs_approx_lnL(vcat([bls], bls_vec), gs, [h, h_from_inBV], lnL0, sum_phylo_log_lk2, transform_method)
+				#compare_true_vs_approx_lnL(vcat([bls], bls_vec), [g], [h], lnL0, sum_phylo_log_lk2, transform_method)
+			end
+		end
 	end
 	
 	println(join(["best lnL", lnL0, "\n"], "\t"))
@@ -413,6 +529,7 @@ function get_args()
 	nl = type == "AA" ? 20 : 4
 
 	Qrs, q_pis, q_pis_sites, freqs = get_Qrs_freqs(Fs, Qrs, freqs, is_pmsf, pmsf_file, site2pattern, sub_model, mix_freq_model)
+
 
 	return (nb, nl, sub_model, rs, props, Fs, Qrs, freqs, q_pis, q_pis_sites, inv_info, pattern, all_children, descendants)
 end
