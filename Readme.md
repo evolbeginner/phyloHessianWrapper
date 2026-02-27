@@ -156,7 +156,7 @@ ruby ../phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -
 
 ## Literature-cited
 **You might want to cite the following in case you use `phyloHessian`** in case they are involved in your analysis.
--  <a id="ref-Wang_Meade_2025"></a>Wang S, Meade A. Molecular Clock Dating of Deep-Time Evolution Using Complex Mixture Models. https://www.biorxiv.org/content/10.1101/2025.07.17.665246v1. bioRxiv. 2025:2025-07.
+-  <a id="ref-Wang_Meade_2026"></a>Wang S, Meade A. Molecular Clock Dating Using Complex Mixture Models: Applied to Ancient Symbionts. https://academic.oup.com/mbe/advance-article/doi/10.1093/molbev/msag039/8489165. Mol. Biol. Evol. msag039.
 
 **And tools (potentially) involved**
 -  Minh BQ, Schmidt HA, Chernomor O, Schrempf D, Woodhams MD, Von Haeseler A, Lanfear R. IQ-TREE 2: new models and efficient methods for phylogenetic inference in the genomic era. Molecular biology and evolution. 2020 May 1;37(5):1530-4.
