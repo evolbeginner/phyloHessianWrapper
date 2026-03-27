@@ -2,7 +2,7 @@
 
 
 #########################################
-# last updated 2026-02-04
+# last updated 2026-03-27
 # well logged
 
 
@@ -376,8 +376,8 @@ opts.each do |opt, value|
 end
 
 if not is_mwopt
-  iqtree_add_arg0.gsub!(' -mwopt', '')
-  iqtree_add_arg.gsub!(' -mwopt', '')
+  iqtree_add_arg0.gsub!('-mwopt', '')
+  iqtree_add_arg.gsub!('-mwopt', '')
 end
 
 model = model.dup

@@ -1,0 +1,5 @@
+### v0.4.0 — 2026-03-27
+- **Fixed:** bug fixed for LG4M combined with `+I`.
+- **Improved:** speed up for lnL calculation via optimization of the matrix exponential.
+- **Improved:** speed up for Hessian calculation particularly under the 2nd-order derivative of lnL (`--hessian_type fd`).
+
