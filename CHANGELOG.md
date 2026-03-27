@@ -1,3 +1,6 @@
+### v0.4.1 — 2026-03-27
+- **Fixed:** bug of not uploading some dependencies in the folder `additional_scripts/`
+
 ### v0.4.0 — 2026-03-27
 - **Fixed:** bug fixed for LG4M combined with `+I`.
 - **Improved:** speed up for lnL calculation via optimization of the matrix exponential.

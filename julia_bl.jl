@@ -519,7 +519,7 @@ function main(ctx::RunCtx)
         g = calculate_gradient(bls, sum_phylo_log_lk2)  # keep your original behavior
         g_mcmctree = g[new_bl_order]
 
-        if occursin(r"^finite_difference|fd$", ctx.hessian_type)
+        if occursin(r"^(finite_difference|fd|2nd_order|2nd_order_derivative)$", ctx.hessian_type)
             h = hessian_fd(bls, sum_phylo_log_lk2, nb.branch)
         end
 

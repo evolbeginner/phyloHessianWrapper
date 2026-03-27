@@ -8,19 +8,38 @@
 
 #########################################
 $VERBOSE = nil
-DIR = File.dirname($0)
+# Base directory of THIS Ruby file
+DIR = File.expand_path(__dir__) unless defined?(DIR)
+
 ADD_SCRIPTS_DIR = File.join(DIR, "additional_scripts")
 $VERBOSE = true
 
+require "getoptlong"
+require "tempfile"
+require "fileutils"
+require "colorize"
 
-#########################################
-require 'getoptlong'
-require 'tempfile'
-require 'fileutils'
-require 'colorize'
 
-require_relative 'additional_scripts/Dir'
-require_relative 'additional_scripts/util'
+def require_with_fallback(relative_no_ext, base_dir)
+  begin
+    require_relative relative_no_ext
+  rescue LoadError
+    abs_rb = File.join(base_dir, "#{File.basename(relative_no_ext)}.rb")
+    if File.file?(abs_rb)
+      require abs_rb
+    else
+      warn "Cannot load #{relative_no_ext}.rb"
+      warn "Tried require_relative '#{relative_no_ext}'"
+      warn "Tried absolute path: #{abs_rb}"
+      warn "__dir__ = #{__dir__}"
+      warn "Dir.pwd = #{Dir.pwd}"
+      raise
+    end
+  end
+end
+
+require_with_fallback("additional_scripts/Dir",  ADD_SCRIPTS_DIR)
+require_with_fallback("additional_scripts/util", ADD_SCRIPTS_DIR)
 
 
 #########################################

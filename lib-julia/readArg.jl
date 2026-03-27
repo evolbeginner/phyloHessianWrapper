@@ -16,7 +16,7 @@ branchout_matrix = nothing
 bs_branchout_matrix = nothing
 
 hessian_outfile = nothing
-hessian_type = "SKT2004"
+hessian_type = "STK2004"
 hessian_infile = nothing
 is_compare = false
 
@@ -88,9 +88,9 @@ function parse_commandline()
 			arg_type = String
 			default = nothing
 		"--hessian_type"
-			help = "SKT2004 (default) or fd (finite_difference)"
+			help = "STK2004 (default) or fd (finite_difference)"
 			arg_type = String
-			default = "SKT2004"
+			default = "STK2004"
 		"--read_hessian", "--read_inBV", "--read_in_BV"
 			help = "read the in.BV file"
 			arg_type = String
