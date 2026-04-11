@@ -1,7 +1,7 @@
 #! /bin/env julia
 
 ######################################################################
-# v0.24.0 (refactor: remove global dependencies in hot paths)
+# v0.24.1 (fix +I log-likelihood: apply invariant mixture only to invariant sites)
 
 ######################################################################
 const LIB = "lib-julia"
@@ -74,6 +74,56 @@ function dict_children_to_vec(all_children::Dict, n_nodes::Int)
     return out
 end
 
+# +I helper: site is invariant if, after removing gap tips (all-ones columns),
+# all remaining observed tips have the same state.
+@inline function is_invariant_site_from_liks(
+    liks_ori::AbstractMatrix{Float64},
+    nb::Nb;
+    atol::Float64 = 1e-12
+)::Bool
+    tips = @view liks_ori[:, 1:nb.tip]
+
+    seen_state = 0
+    has_nongap = false
+
+    @inbounds for t in 1:nb.tip
+        col = @view tips[:, t]
+
+        # gap coding in this pipeline: all entries are 1.0
+        is_gap = true
+        for s in eachindex(col)
+            if abs(col[s] - 1.0) > atol
+                is_gap = false
+                break
+            end
+        end
+        if is_gap
+            continue
+        end
+
+        # expected one-hot observed state
+        st = 0
+        for s in eachindex(col)
+            if col[s] > 1.0 - atol
+                st = s
+                break
+            end
+        end
+        if st == 0
+            return false
+        end
+
+        has_nongap = true
+        if seen_state == 0
+            seen_state = st
+        elseif st != seen_state
+            return false
+        end
+    end
+
+    return has_nongap
+end
+
 ######################################################################
 @inline function eigendecom_pt!(
     out::AbstractVector{Float64},
@@ -91,7 +141,6 @@ end
     mul!(out, U, tmp)
     return out
 end
-
 
 ######################################################################
 function do_phylo_log_lk(
@@ -114,6 +163,9 @@ function do_phylo_log_lk(
 
     props_norm = props ./ sum(props)
     is_lg4 = (sub_model == "LG4M" || sub_model == "LG4X")
+
+    # IMPORTANT: +I should only use invariant mixture for invariant sites
+    is_inv_site = is_do_inv ? is_invariant_site_from_liks(liks_ori, nb) : false
 
     liks = similar(liks_ori)
     comp = zeros(Float64, nb.tip + nb.node)
@@ -185,26 +237,36 @@ function do_phylo_log_lk(
         log_var = logsumexp(log.(wk) .+ lks_var)
 
         if is_do_inv
-            # invariant part: sum_k wk * L(T, 0 * Q_k)
-            lks_inv = Vector{Float64}(undef, nq)
-            @inbounds for k in 1:nq
-                lks_inv[k] = comp_loglk(qs[k], 0.0)
-            end
-            log_inv = logsumexp(log.(wk) .+ lks_inv)
+            if is_inv_site
+                # invariant part only for invariant sites
+                lks_inv = Vector{Float64}(undef, nq)
+                @inbounds for k in 1:nq
+                    lks_inv[k] = comp_loglk(qs[k], 0.0)
+                end
+                log_inv = logsumexp(log.(wk) .+ lks_inv)
 
-            a = log(max(inv_prop, 1e-300)) + log_inv
-            b = log(max(1.0 - inv_prop, 1e-300)) + log_var
-            return logsumexp([a, b])
+                a = log(max(inv_prop, 1e-300)) + log_inv
+                b = log(max(1.0 - inv_prop, 1e-300)) + log_var
+                return logsumexp([a, b])
+            else
+                # non-invariant sites: no invariant component
+                return log(max(1.0 - inv_prop, 1e-300)) + log_var
+            end
         else
             return log_var
         end
     else
-        # Keep your original non-LG4 behavior (cross product over rs and q)
+        # non-LG4 behavior (cross product over rs and q), with corrected +I handling
         rs2 = rs
         props2 = props_norm
         if is_do_inv
-            rs2 = vcat(0.0, rs)
-            props2 = vcat(inv_prop, props_norm .* (1 - inv_prop))
+            if is_inv_site
+                rs2 = vcat(0.0, rs)
+                props2 = vcat(inv_prop, props_norm .* (1 - inv_prop))
+            else
+                rs2 = rs
+                props2 = props_norm .* (1 - inv_prop)
+            end
         end
 
         qs = q_pis isa AbstractVector ? q_pis : (q_pis,)
@@ -224,8 +286,6 @@ function do_phylo_log_lk(
         return logsumexp(log.(weights) .+ lks)
     end
 end
-
-
 
 ######################################################################
 function get_liks_pattern(pattern, nl::Int, nb::Nb)
@@ -264,7 +324,7 @@ function delta_log_lk!(
     site_pat, times_of_pattern = pattern2[i]
     q = choose_q(ctx, i)
 
-    return do_phylo_log_lk(ctx, q, bls_work, site_pat; index=i) * times_of_pattern
+    return do_phylo_log_lk(ctx, q, bls_work, site_pat; index = i) * times_of_pattern
 end
 
 ######################################################################
@@ -318,39 +378,39 @@ end
 
 ######################################################################
 function hessian_fd(bls::Vector{Float64}, sum_phylo_log_lk2::Function, nb_branch::Int)
-	h = ones(nb_branch, nb_branch)
-	function calculate_lnL(bls0, indices, nums)
-		a = deepcopy(bls0)
-		a[indices] .+= nums
-		loglk = sum_phylo_log_lk2(a)
-	end
-	
-	f0 = calculate_lnL(bls,[1],(0))
-	f = calculate_lnL
+    h = ones(nb_branch, nb_branch)
+    function calculate_lnL(bls0, indices, nums)
+        a = deepcopy(bls0)
+        a[indices] .+= nums
+        loglk = sum_phylo_log_lk2(a)
+    end
 
-	@inbounds Threads.@threads for i in 1:nb_branch
-		@inbounds for j in 1:nb_branch
-			if h[i,j] != 1.0
-				println([i,j])
-				h[i,j] = h[j,i]
-				continue
-			end
-			bls0 = copy(bls) #bls is mutable
-			△bls = max.((bls0[i], bls0[j])./1e6, 1e-6)
-			(bl1, bl2) = △bls
-			if i == j
-				v1 = ( f(bls,[i],(bl1)) - 2*f0 + f(bls,[i],(-bl1)) ) / (reduce(*,△bls))
-			else
-				v1 = (f(bls0,[i,j],(bl1,bl2)) + f(bls0,[i,j],(-bl1,-bl2)) - f(bls0,[i,j],(-bl1,bl2)) - f(bls0,[i,j],(bl1,-bl2))) / (4*reduce(*,△bls))
-			end
-			h[i,j] = v1
-		end
-	end
+    f0 = calculate_lnL(bls, [1], (0))
+    f = calculate_lnL
 
-	println()
-	#h .= -h
+    @inbounds Threads.@threads for i in 1:nb_branch
+        @inbounds for j in 1:nb_branch
+            if h[i, j] != 1.0
+                println([i, j])
+                h[i, j] = h[j, i]
+                continue
+            end
+            bls0 = copy(bls) # bls is mutable
+            △bls = max.((bls0[i], bls0[j]) ./ 1e6, 1e-6)
+            (bl1, bl2) = △bls
+            if i == j
+                v1 = (f(bls, [i], (bl1)) - 2 * f0 + f(bls, [i], (-bl1))) / (reduce(*, △bls))
+            else
+                v1 = (f(bls0, [i, j], (bl1, bl2)) + f(bls0, [i, j], (-bl1, -bl2)) - f(bls0, [i, j], (-bl1, bl2)) - f(bls0, [i, j], (bl1, -bl2))) / (4 * reduce(*, △bls))
+            end
+            h[i, j] = v1
+        end
+    end
 
-	return(h)
+    println()
+    # h .= -h
+
+    return h
 end
 
 ######################################################################
@@ -368,7 +428,7 @@ function sum_phylo_log_lk(ctx::RunCtx, param::Vector{Float64}, pattern2)
     s = 0.0
     for i in eachindex(pattern2)
         q = choose_q(ctx, i)
-        s += do_phylo_log_lk(ctx, q, param, pattern2[i][1]; index=i) * pattern2[i][2]
+        s += do_phylo_log_lk(ctx, q, param, pattern2[i][1]; index = i) * pattern2[i][2]
     end
     return s
 end
@@ -385,8 +445,10 @@ function calculate_gradient(bls::Vector{Float64}, sum_phylo_log_lk2::Function)
 
     for i in eachindex(bls2)
         step = (1 + bls2[i]) / 1e6
-        a = copy(bls2); a[i] += step
-        b = copy(bls2); b[i] -= step
+        a = copy(bls2)
+        a[i] += step
+        b = copy(bls2)
+        b[i] -= step
         delta_loglks[i] = (sum_phylo_log_lk2(a) - sum_phylo_log_lk2(b)) / (2 * step)
     end
     return delta_loglks
@@ -615,3 +677,4 @@ if abspath(PROGRAM_FILE) == @__FILE__
     ctx = get_args_refactored()
     main(ctx)
 end
+

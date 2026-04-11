@@ -1,0 +1,68 @@
+IQ-TREE version 3.1.0 for Linux x86 64-bit built Mar 12 2026
+Developed by Bui Quang Minh, Thomas Wong, Nhan Ly-Trong, Huaiyan Ren
+Contributed by Lam-Tung Nguyen, Dominik Schrempf, Chris Bielow,
+Olga Chernomor, Michael Woodhams, Diep Thi Hoang, Heiko Schmidt
+
+Host:    mic-r750 (AVX512, FMA3, 1007 GB RAM)
+Command: iqtree -te LG+G_ph/iqtree/iqtree.treefile -m LG4M+I -s sim/alignment/combined.fas -pre LG+G_ph/iqtree/iqtree -redo -wsl -quiet -mwopt -keep-ident -blmin 4.0e-06 -T 10
+Seed:    796653 (Using SPRNG - Scalable Parallel Random Number Generator)
+Time:    Sat Apr 11 23:50:45 2026
+Kernel:  AVX+FMA - 10 threads (128 CPU cores detected)
+
+Reading alignment file sim/alignment/combined.fas ... Fasta format detected
+Reading fasta file: done in 3.2369e-05 secs
+Alignment most likely contains protein sequences
+Constructing alignment: done in 0.000158513 secs
+Alignment has 5 sequences with 200 columns, 119 distinct patterns
+75 parsimony-informative, 33 singleton sites, 92 constant sites
+    Gap/Ambiguity  Composition  p-value
+Analyzing sequences: done in 6.91786e-06 secs
+   1  t5    0.00%    passed     99.73%
+   2  t4    0.00%    passed    100.00%
+   3  t1    0.00%    passed     99.84%
+   4  t3    0.00%    passed     99.98%
+   5  t2    0.00%    passed    100.00%
+****  TOTAL    0.00%  0 sequences failed composition chi2 test (p-value<5%; df=19)
+Reading input tree file LG+G_ph/iqtree/iqtree.treefile ...
+Model LG4M+I is alias for MIX{LG4M1,LG4M2,LG4M3,LG4M4}*G4+I
+
+NOTE: 0 MB RAM (0 GB) is required!
+WARNING: Number of threads seems too high for short alignments. Use -T AUTO to determine best number of threads.
+Estimate model parameters (epsilon = 0.010)
+1. Initial log-likelihood: -3089.456
+2. Current log-likelihood: -1351.663
+3. Current log-likelihood: -1345.370
+4. Current log-likelihood: -1345.258
+5. Current log-likelihood: -1345.193
+6. Current log-likelihood: -1345.140
+7. Current log-likelihood: -1345.098
+8. Current log-likelihood: -1345.064
+9. Current log-likelihood: -1345.035
+10. Current log-likelihood: -1345.011
+11. Current log-likelihood: -1344.991
+12. Current log-likelihood: -1344.974
+13. Current log-likelihood: -1344.960
+14. Current log-likelihood: -1344.947
+15. Current log-likelihood: -1344.936
+Optimal log-likelihood: -1344.926
+Proportion of invariable sites: 0.163
+Gamma shape alpha: 1.995
+Parameters optimization took 15 rounds (0.029 sec)
+Wrote distance file to... 
+BEST SCORE FOUND : -1344.926
+Site log-likelihoods printed to LG+G_ph/iqtree/iqtree.sitelh
+Total tree length: 1.156
+
+Total number of iterations: 0
+CPU time used for tree search: 0.000 sec (0h:0m:0s)
+Wall-clock time used for tree search: 0.000 sec (0h:0m:0s)
+Total CPU time used: 0.331 sec (0h:0m:0s)
+Total wall-clock time used: 0.037 sec (0h:0m:0s)
+
+Analysis results written to: 
+  IQ-TREE report:                LG+G_ph/iqtree/iqtree.iqtree
+  Maximum-likelihood tree:       LG+G_ph/iqtree/iqtree.treefile
+  Site log-likelihoods:          LG+G_ph/iqtree/iqtree.sitelh
+  Screen log file:               LG+G_ph/iqtree/iqtree.log
+
+Date and Time: Sat Apr 11 23:50:45 2026
