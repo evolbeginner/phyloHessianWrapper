@@ -1,21 +1,21 @@
-Executing: iqtree -te LG+G_ph/iqtree/iqtree.treefile -m LG4M+I -s sim/alignment/combined.fas -pre LG+G_ph/iqtree/iqtree -redo -wsl -quiet -mwopt -keep-ident -blmin 4.0e-06 -T 10
+Executing: iqtree -te LG+G_ph/iqtree/iqtree.treefile -m LG+C20+I -s sim/alignment/combined.fas -pre LG+G_ph/iqtree/iqtree -redo -wsl -quiet -mwopt -keep-ident -ft LG+G_ph/iqtree/iqtree.treefile -blmin 4.0e-06 -T 10
 
 Executing: Rscript /mnt/hd1/home/sishuo/lab-tools/phyloHessian/parse_tree_seq.R -s sim/alignment/combined.fas -t LG+G_ph/iqtree/iqtree.treefile --cpu 10 --julia_outdir LG+G_ph/julia --force --type AA
 Executing: bash /mnt/hd1/home/sishuo/lab-tools/phyloHessian/additional_scripts/generate_branch_out_mat.sh -t LG+G_ph/iqtree/iqtree.treefile --ref_tree ref.tre --outdir LG+G_ph/bl --force
 Rscript /mnt/hd1/home/sishuo/lab-tools/phyloHessian/additional_scripts/align_bl.R LG+G_ph/iqtree/iqtree.treefile LG+G_ph/bl/branch_out > LG+G_ph/bl/branch_out.matrix
-Executing: julia -t 10 /mnt/hd1/home/sishuo/lab-tools/phyloHessian/julia_bl.jl --basics_indir LG+G_ph/julia -t AA --tree LG+G_ph/iqtree/iqtree.treefile -b LG+G_ph/bl/branch_out.matrix -m LG4M --mfm nothing --outdir LG+G_ph/inBV --force  --hessian_type STK2004 2>LG+G_ph/error
+Executing: julia -t 10 /mnt/hd1/home/sishuo/lab-tools/phyloHessian/julia_bl.jl --basics_indir LG+G_ph/julia -t AA --tree LG+G_ph/iqtree/iqtree.treefile -b LG+G_ph/bl/branch_out.matrix -m LG --mfm C20 --outdir LG+G_ph/inBV --force --pmsf LG+G_ph/iqtree/iqtree.sitefreq --hessian_type STK2004 2>LG+G_ph/error
 
-2026-04-11T23:50:51.651
+2026-04-11T23:54:06.149
 
-rs:	[0.3498, 0.7822, 1.2787, 2.3703]
-props:	[0.2092, 0.2092, 0.2092, 0.2092]
-freqs:	[1.0, 1.0, 1.0, 1.0]
-Qrs:	[1.0, 1.0, 1.0, 1.0]
-2026-04-11T23:50:52.221
-2026-04-11T23:50:56.635
-best lnL	-1344.9257537740061	
+rs:	[0.0461, 0.2926, 0.8627, 2.7987]
+props:	[0.25, 0.25, 0.25, 0.25]
+freqs:	Float64[]
+Qrs:	Float64[]
+2026-04-11T23:54:06.723
+2026-04-11T23:54:11.676
+best lnL	-1112.3241664915722	
 
-2026-04-11T23:50:57.689
+2026-04-11T23:54:12.975
 
 Executing: julia /mnt/hd1/home/sishuo/lab-tools/phyloHessian/additional_scripts/MFAtoPHY.jl sim/alignment/combined.fas
 t5        
