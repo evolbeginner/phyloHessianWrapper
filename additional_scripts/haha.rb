@@ -2,15 +2,7 @@
 
 
 ###############################################################
-begin
-  require "Dir"
-rescue LoadError
-  begin
-    require File.join(File.dirname(File.expand_path(__FILE__)), "Dir")
-  rescue LoadError
-    require_relative "Dir"
-  end
-end
+require_relative 'Dir'
 require 'getoptlong'
 require 'bio-nwk'
 

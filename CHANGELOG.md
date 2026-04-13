@@ -1,3 +1,6 @@
+### v0.4.3 — 2026-04-13
+- **Fixed:** fix a bug of failing to load `Dir.rb`.
+
 ### v0.4.2 — 2026-04-11
 - **Fixed:** bug of `+I` model fixed (in v0.4.0 and v0.4.1 it could lead to NA for lnL thus no output for the Hessian).
 

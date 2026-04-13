@@ -2,7 +2,7 @@
 
 
 #########################################
-# last updated 2026-03-27
+# last updated 2026-04-13
 # well logged
 
 
@@ -19,6 +19,7 @@ require "tempfile"
 require "fileutils"
 require "colorize"
 
+#$LOAD_PATH.unshift(ADD_SCRIPTS_DIR) unless $LOAD_PATH.include?(ADD_SCRIPTS_DIR)
 
 def require_with_fallback(relative_no_ext, base_dir)
   begin
