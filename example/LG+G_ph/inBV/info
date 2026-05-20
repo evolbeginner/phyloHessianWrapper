@@ -1,0 +1,12 @@
+all_children
+Dict(6 => [1, 7, 8], 7 => [2, 3], 8 => [4, 5])
+
+
+basics
+Dict("nb.node" => 3, "nb.tip" => 5)
+
+
+q_pis size:	(1,)
+
+best lnL	-1339.4253736980766	
+

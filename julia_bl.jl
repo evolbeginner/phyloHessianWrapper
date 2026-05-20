@@ -2,6 +2,9 @@
 
 ######################################################################
 # v0.24.1 (fix +I log-likelihood: apply invariant mixture only to invariant sites)
+# v0.24.2 (speed: cache exp(Lambda * bl * r) within each full lnL evaluation;
+#          avoid computing STK Hessian when FD Hessian requested)
+# v0.25.0 (add alternative full P(t)=exp(Qrt) cache mode; keep diag cache default)
 
 ######################################################################
 const LIB = "lib-julia"
@@ -16,7 +19,7 @@ const GET_BRANCH_ORDER_IN_APE = joinpath(@__DIR__, "additional_scripts", "get_br
 
 using Dates
 using LinearAlgebra
-BLAS.set_num_threads(1)
+# BLAS.set_num_threads(1)
 
 using StatsFuns: logsumexp
 using DelimitedFiles
@@ -143,12 +146,107 @@ end
 end
 
 ######################################################################
+# Caches for one fixed branch-length vector.
+# :diag cache stores exp(Lambda * b * r) per edge/state.
+# :full cache stores full P(t)=U*diag(exp(Lambda*t))*U_inv per edge.
+const PTDiagCache = Dict{Tuple{UInt64, Float64}, Matrix{Float64}}          # edge × state
+const PTFullCache = Dict{Tuple{UInt64, Float64}, Vector{Matrix{Float64}}}  # edge -> (state × state)
+const PTAnyCache = Union{PTDiagCache, PTFullCache}
+
+@inline qid(q) = UInt(objectid(q.U))
+@inline canon_rate(r::Float64) = (r == 0.0 ? 0.0 : r)
+
+@inline function eigendecom_pt_diag!(
+    out::AbstractVector{Float64},
+    tmp::AbstractVector{Float64},
+    U::AbstractMatrix{Float64},
+    U_inv::AbstractMatrix{Float64},
+    v::AbstractVector{Float64},
+    diagexp_row
+)
+    mul!(tmp, U_inv, v)
+    @inbounds @simd for k in eachindex(tmp)
+        tmp[k] *= diagexp_row[k]
+    end
+    mul!(out, U, tmp)
+    return out
+end
+
+function get_diagexp_cache!(
+    cache::PTDiagCache,
+    q,
+    bl::Vector{Float64},
+    r::Float64,
+    nl::Int
+)
+    key = (qid(q), canon_rate(r))
+    get!(cache, key) do
+        M = Matrix{Float64}(undef, length(bl), nl)  # edge × state
+        Λ = q.Lambda
+        @inbounds for e in eachindex(bl)
+            t = bl[e] * r
+            for s in 1:nl
+                M[e, s] = exp(Λ[s] * t)
+            end
+        end
+        M
+    end
+end
+
+function get_fullpt_cache!(
+    cache::PTFullCache,
+    q,
+    bl::Vector{Float64},
+    r::Float64,
+    nl::Int
+)
+    key = (qid(q), canon_rate(r))
+    get!(cache, key) do
+        U = q.U
+        U_inv = q.U_inv
+        Λ = q.Lambda
+
+        nedge = length(bl)
+        Pvec = Vector{Matrix{Float64}}(undef, nedge)
+
+        # r == 0 => P = I for all edges
+        if r == 0.0
+            I_nl = Matrix{Float64}(I, nl, nl)
+            @inbounds for e in 1:nedge
+                Pvec[e] = I_nl
+            end
+            return Pvec
+        end
+
+        tmp = Matrix{Float64}(undef, nl, nl)  # row-scaled U_inv
+        @inbounds for e in 1:nedge
+            t = bl[e] * r
+
+            # tmp = Diagonal(exp(Λ*t)) * U_inv (scale rows)
+            for i in 1:nl
+                s = exp(Λ[i] * t)
+                @simd for j in 1:nl
+                    tmp[i, j] = U_inv[i, j] * s
+                end
+            end
+
+            P = Matrix{Float64}(undef, nl, nl)
+            mul!(P, U, tmp)
+            Pvec[e] = P
+        end
+        Pvec
+    end
+end
+
+######################################################################
 function do_phylo_log_lk(
     ctx::RunCtx,
     q_pis,
     bl::Vector{Float64},
     liks_ori::Matrix{Float64};
-    index::Int
+    index::Int,
+    pt_cache::Union{Nothing, PTAnyCache}=nothing,
+    cache_mode::Symbol=:diag    # :diag or :full
 )::Float64
     nb = ctx.nb
     nl = ctx.nl
@@ -184,6 +282,20 @@ function do_phylo_log_lk(
         copyto!(liks, liks_ori)
         fill!(comp, 0.0)
 
+        use_eig = (eltype(U) <: Float64 && eltype(Lambda) <: Float64 && eltype(U_inv) <: Float64)
+
+        diagexp = nothing
+        fullpt = nothing
+        if use_eig && pt_cache !== nothing
+            if cache_mode === :diag
+                diagexp = get_diagexp_cache!(pt_cache::PTDiagCache, q, bl, r, nl)
+            elseif cache_mode === :full
+                fullpt = get_fullpt_cache!(pt_cache::PTFullCache, q, bl, r, nl)
+            else
+                error("Unknown cache_mode=$(cache_mode). Use :diag or :full.")
+            end
+        end
+
         j = 0
         @inbounds for anc in (nb.tip + nb.node):-1:(1 + nb.tip)
             children = all_children[anc]
@@ -191,13 +303,23 @@ function do_phylo_log_lk(
 
             for c in children
                 j += 1
-                t = bl[j] * r
                 @views childlik = liks[:, c]
 
-                if !(eltype(U) <: Float64 && eltype(Lambda) <: Float64 && eltype(U_inv) <: Float64)
+                if r == 0.0
+                    # P=I shortcut for invariant component
+                    copyto!(childbuf, childlik)
+                elseif !use_eig
+                    t = bl[j] * r
                     childbuf .= exp(Q * t) * childlik
                 else
-                    eigendecom_pt!(childbuf, tmp, U, Lambda, U_inv, childlik, t)
+                    if fullpt !== nothing
+                        mul!(childbuf, fullpt[j], childlik)
+                    elseif diagexp !== nothing
+                        eigendecom_pt_diag!(childbuf, tmp, U, U_inv, childlik, @view(diagexp[j, :]))
+                    else
+                        t = bl[j] * r
+                        eigendecom_pt!(childbuf, tmp, U, Lambda, U_inv, childlik, t)
+                    end
                 end
 
                 @simd for s in 1:nl
@@ -337,14 +459,15 @@ function hessian_STK2004(
     n_pat = length(pattern2)
 
     lnLs = zeros(Float64, n_pat)
-    h_local = [zeros(Float64, nb.branch, nb.branch) for _ in 1:nthreads()]
-    g_local = [zeros(Float64, nb.branch) for _ in 1:nthreads()]
 
-    # thread-local bls work buffers
-    bls_work = [similar(bls) for _ in 1:nthreads()]
+    # IMPORTANT: size by maxthreadid(), not nthreads()
+    nslots = Threads.maxthreadid()
+    h_local = [zeros(Float64, nb.branch, nb.branch) for _ in 1:nslots]
+    g_local = [zeros(Float64, nb.branch) for _ in 1:nslots]
+    bls_work = [similar(bls) for _ in 1:nslots]
 
     Threads.@threads for k in 1:n_pat
-        tid = threadid()
+        tid = Threads.threadid()
         h = h_local[tid]
         g = g_local[tid]
         bw = bls_work[tid]
@@ -366,7 +489,7 @@ function hessian_STK2004(
 
     hsum = zeros(Float64, nb.branch, nb.branch)
     gsum = zeros(Float64, nb.branch)
-    for t in 1:nthreads()
+    for t in eachindex(h_local)
         hsum .+= h_local[t]
         gsum .+= g_local[t]
     end
@@ -375,6 +498,7 @@ function hessian_STK2004(
     lnL0 = sum(lnLs)
     return (h, gsum, lnL0, lnLs)
 end
+
 
 ######################################################################
 function hessian_fd(bls::Vector{Float64}, sum_phylo_log_lk2::Function, nb_branch::Int)
@@ -424,11 +548,13 @@ end
     [bl_order["ape2mcmctree"][k] for k in sorted_keys]
 end
 
-function sum_phylo_log_lk(ctx::RunCtx, param::Vector{Float64}, pattern2)
+function sum_phylo_log_lk(ctx::RunCtx, param::Vector{Float64}, pattern2; cache_mode::Symbol=:diag)
     s = 0.0
+    pt_cache = cache_mode === :full ? PTFullCache() : PTDiagCache()  # valid for this fixed param vector
     for i in eachindex(pattern2)
         q = choose_q(ctx, i)
-        s += do_phylo_log_lk(ctx, q, param, pattern2[i][1]; index = i) * pattern2[i][2]
+        s += do_phylo_log_lk(ctx, q, param, pattern2[i][1];
+                             index=i, pt_cache=pt_cache, cache_mode=cache_mode) * pattern2[i][2]
     end
     return s
 end
@@ -572,18 +698,31 @@ function main(ctx::RunCtx)
 
     println(now())
 
-    sum_phylo_log_lk2 = (x::Vector{Float64}) -> sum_phylo_log_lk(ctx, x, pattern2)
+    cache_mode = get(ENV, "BL_CACHE_MODE", "diag") == "full" ? :full : :diag
+	#cache_mode = :full
+    println("cache_mode = ", cache_mode)
+    sum_phylo_log_lk2 = (x::Vector{Float64}) -> sum_phylo_log_lk(ctx, x, pattern2; cache_mode=cache_mode)
 
     lnL0 = sum_phylo_log_lk2(bls)
+    println("Starting Hessian and gradient calculation.")
+    println(now())
 
     if ctx.hessian_outfile !== nothing
-        h, g_stk, lnL0_stk, _ = hessian_STK2004(bls, pattern2, ctx)
-        g = calculate_gradient(bls, sum_phylo_log_lk2)  # keep your original behavior
-        g_mcmctree = g[new_bl_order]
+        # keep your existing gradient behavior
+        g = zeros(length(bls))
 
+        lnL_for_compare = lnL0
         if occursin(r"^(finite_difference|fd|2nd_order|2nd_order_derivative)$", ctx.hessian_type)
             h = hessian_fd(bls, sum_phylo_log_lk2, nb.branch)
+            _, g_stk, lnL0_stk, _ = hessian_STK2004(bls, pattern2, ctx)
+            g = g_stk
+            # g = calculate_gradient(bls, sum_phylo_log_lk2)
+        else
+            h, g_stk, lnL0_stk, _ = hessian_STK2004(bls, pattern2, ctx)
+            g = g_stk
+            lnL_for_compare = lnL0_stk
         end
+        g_mcmctree = g[new_bl_order]
 
         out_fh = open(ctx.hessian_outfile, "w")
         println(out_fh, "")
@@ -607,10 +746,10 @@ function main(ctx::RunCtx)
         if ctx.is_compare
             h_from_inBV = get_h_from_inBV(ctx.hessian_infile, bl_order)
             if isempty(bls_vec)
-                compare_true_vs_approx_lnL(bls, [g], [h, h_from_inBV], lnL0_stk, sum_phylo_log_lk2, ctx.transform_method)
+                compare_true_vs_approx_lnL(bls, [g], [h, h_from_inBV], lnL_for_compare, sum_phylo_log_lk2, ctx.transform_method)
             else
                 gs = [g, zeros(Float64, length(g))]
-                compare_true_vs_approx_lnL(vcat([bls], bls_vec), gs, [h, h_from_inBV], lnL0_stk, sum_phylo_log_lk2, ctx.transform_method)
+                compare_true_vs_approx_lnL(vcat([bls], bls_vec), gs, [h, h_from_inBV], lnL_for_compare, sum_phylo_log_lk2, ctx.transform_method)
             end
         end
     end
@@ -677,3 +816,4 @@ if abspath(PROGRAM_FILE) == @__FILE__
     ctx = get_args_refactored()
     main(ctx)
 end
+

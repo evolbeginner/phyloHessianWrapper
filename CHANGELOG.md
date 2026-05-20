@@ -1,3 +1,7 @@
+### v0.4.4 - 2026-05-20
+- **Improved:** Hessian calculation speedup
+- **Fixed:** fix a buf about thread allocation
+
 ### v0.4.3 — 2026-04-13
 - **Fixed:** fix a bug of failing to load `Dir.rb`.
 

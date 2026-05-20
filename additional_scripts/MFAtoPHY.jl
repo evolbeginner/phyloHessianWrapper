@@ -35,7 +35,7 @@ function fasta_to_phylip(input_file::String)
     open(output_file, "w") do file
         println(file, " ", length(sequences), " ", seq_lengths[1])
         for (header, seq) in zip(headers, sequences)
-            padded_header = rpad(header[1:min(end, 10)], 10)
+            padded_header = rpad(header[1:min(end, 100)], 100)
 			println(padded_header)
             println(file, padded_header, " ", seq)
         end
