@@ -1,7 +1,7 @@
 ```markdown
 # PhyloHessianWrapper
 
-Estimate phylogenetic gradients/Hessian matrices for divergence-time inference with **MCMCtree** approximate likelihood ([dos Reis & Yang, 2011](#ref-dosreis_yang_2011)), including complex amino-acid models.
+Estimate phylogenetic gradients/Hessian matrices for divergence-time inference with **MCMCtree** approximate likelihood (dos Reis & Yang, 2011), including complex amino-acid models.
 
 ## Installation
 
@@ -43,21 +43,17 @@ This is the preferred way to generate `ref.tre`.
 ### 3) Run `phyloHessianWrapper`
 
 ```bash
-ruby phyloHessianWrapper.rb \
-  -s sim/alignment/combined.fas \
-  --reftree ref.tre \
-  -m LG+G \
-  --outdir LG+G_ph \
-  --force \
-  --cpu 10
+ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+G --outdir LG+G_ph --force --cpu 10
 ```
 
 ### 4) (Optional) Validate likelihoods
+
 Compare:
 - `LG+G_ph/inBV/info` (phyloHessian)
 - `LG+G_ph/iqtree/iqtree.log` (IQ-TREE)
 
 ### 5) Run MCMCtree with generated `in.BV`
+
 Copy:
 ```bash
 cp LG+G_ph/inBV/in.BV /path/to/your/mcmctree/run/
@@ -101,7 +97,8 @@ mcmctree mcmctree.ctl
 ---
 
 ## More Examples
-### LG+C60+G with PMSF (recommended for large datasets)
+
+### LG+C60+G with PMSF (recommended for large datasets; see Wang et al., 2018)
 
 You can enable PMSF in either of two equivalent ways:
 
@@ -135,13 +132,16 @@ ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m E
 - Wang S, Meade A. 2026. *Molecular Clock Dating Using Complex Mixture Models: Applied to Ancient Symbionts*. **Mol Biol Evol**. msag039.
 
 ### MCMCtree approximate-likelihood reference
-- <a id="ref-dosreis_yang_2011"></a>dos Reis M, Yang Z. 2011. Approximate likelihood calculation on a phylogeny for Bayesian estimation of divergence times. **Mol Biol Evol** 28(7):2161–2172.  
-  https://academic.oup.com/mbe/article/28/7/2161/1051613
+<a id="ref-dos-reis-yang-2011"></a>
+- dos Reis M, Yang Z. 2011. Approximate likelihood calculation on a phylogeny for Bayesian estimation of divergence times. **Mol Biol Evol** 28(7):2161–2172.  
+  <a href="https://academic.oup.com/mbe/article/28/7/2161/1051613">https://academic.oup.com/mbe/article/28/7/2161/1051613</a>
 
 ### Tools
 - Minh BQ, Schmidt HA, Chernomor O, Schrempf D, Woodhams MD, von Haeseler A, Lanfear R. 2020. IQ-TREE 2. **Mol Biol Evol** 37(5):1530–1534.
 - Revell LJ. 2024. phytools 2.0. **PeerJ** 12:e16505.
 
 ### Additional
-- <a id="ref-Wang_2018"></a>Wang HC, Minh BQ, Susko E, Roger AJ. 2018. PMSF site-heterogeneity approximation. **Syst Biol** 67(2):216–235.
+<a id="ref-wang-2018"></a>
+- Wang HC, Minh BQ, Susko E, Roger AJ. 2018. Modeling site heterogeneity with posterior mean site frequency profiles accelerates accurate phylogenomic estimation. **Syst Biol** 67(2):216–235.  
+  <a href="https://doi.org/10.1093/sysbio/syx068">https://doi.org/10.1093/sysbio/syx068</a>
 ```
