@@ -13,7 +13,7 @@ ruby additional_scripts/check_dependency.rb
 - Julia (>= 1.6)
 - Ruby (>= 2.7)
 - R (>= 4.0)
-- IQ-TREE2 (>= 2.0) or PhyML (>= 3.1)
+- IQ-TREE (>= 2.0) or PhyML (>= 3.1)
 
 ---
 
@@ -27,14 +27,20 @@ You need:
 
 ### 2) Convert rooted tree to unrooted reference tree (recommended)
 
+Go to `example/`
 ```bash
-Rscript additional_scripts/paml_order_unroot.R rooted.tre ref.tre
+cd example/
+```
+
+You can replace `species.trees` with `rooted.tre`, the former of which is in the format of the species tree required by `MCMCtree` while the latter is simply a rooted species tree.
+```bash
+Rscript additional_scripts/paml_order_unroot.R species.trees ref.tre
 ```
 
 This is the preferred way to generate `ref.tre`.
 
 **Alternative (old workflow):**
-1. Run `mcmctree` first with `usedata=2` (default-style setup) to generate `in.BV`.
+1. Run `mcmctree` first with `usedata=2` (default-style setup) to generate `in.BV` where you need to use `species.trees` as the input species tree.
 2. Extract line 4:
    ```bash
    sed '4!d' in.BV > ref.tre
@@ -48,7 +54,7 @@ ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m L
 
 ### 4) (Optional) Validate likelihoods
 
-Compare:
+Compare the lnL:
 - `LG+G_ph/inBV/info` (phyloHessian)
 - `LG+G_ph/iqtree/iqtree.log` (IQ-TREE)
 
@@ -59,7 +65,7 @@ Copy:
 cp LG+G_ph/inBV/in.BV /path/to/your/mcmctree/run/
 ```
 
-Then configure `mcmctree.ctl` to read `in.BV` (commonly `usedata = 2 in.BV 3`, depending on your PAML version), and run:
+Then configure `mcmctree.ctl` to read `in.BV` (e.g., `usedata = 2 in.BV 1`, depending on your PAML version; see dos Reis, Álvarez-Carretero, and Yang, 2017), and run:
 ```bash
 mcmctree mcmctree.ctl
 ```
@@ -141,7 +147,9 @@ ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m E
 - Revell LJ. 2024. phytools 2.0. **PeerJ** 12:e16505.
 
 ### Additional
+- dos Reis M, Álvarez-Carretero S, Yang Z. 2017. *MCMCTree tutorials*.  
+  https://gensoft.pasteur.fr/docs/paml/4.9j/MCMCtree.Tutorials.pdf
+
 <a id="ref-wang-2018"></a>
 - Wang HC, Minh BQ, Susko E, Roger AJ. 2018. Modeling site heterogeneity with posterior mean site frequency profiles accelerates accurate phylogenomic estimation. **Syst Biol** 67(2):216–235.  
   <a href="https://doi.org/10.1093/sysbio/syx068">https://doi.org/10.1093/sysbio/syx068</a>
-```

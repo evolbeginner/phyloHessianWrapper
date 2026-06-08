@@ -1,5 +1,5 @@
 ### v0.4.5 - 2026-06-06
-- **New features:** paml\_order\_unroot.R to automatically convert a rooted tree into unrooted (ref.tre) in the PAML way, so that there's no need to input `ref.tre` by yourself.
+- **New features:** `paml_order_unroot.R` to automatically convert a rooted tree into unrooted (ref.tre) in the PAML way, so that there's no need to input `ref.tre` by yourself.
 
 ### v0.4.4 - 2026-05-20
 - **Improved:** Hessian calculation speedup
