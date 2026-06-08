@@ -1,6 +1,9 @@
+### v0.4.5 - 2026-06-06
+- **New features:** paml\_order\_unroot.R to automatically convert a rooted tree into unrooted (ref.tre) in the PAML way, so that there's no need to input `ref.tre` by yourself.
+
 ### v0.4.4 - 2026-05-20
 - **Improved:** Hessian calculation speedup
-- **Fixed:** fix a buf about thread allocation
+- **Fixed:** fix a bug about thread allocation
 
 ### v0.4.3 — 2026-04-13
 - **Fixed:** fix a bug of failing to load `Dir.rb`.

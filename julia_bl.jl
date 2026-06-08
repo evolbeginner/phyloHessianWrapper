@@ -19,7 +19,7 @@ const GET_BRANCH_ORDER_IN_APE = joinpath(@__DIR__, "additional_scripts", "get_br
 
 using Dates
 using LinearAlgebra
-# BLAS.set_num_threads(1)
+BLAS.set_num_threads(1)
 
 using StatsFuns: logsumexp
 using DelimitedFiles
@@ -450,53 +450,45 @@ function delta_log_lk!(
 end
 
 ######################################################################
-function hessian_STK2004(
+function hessian_STK2004_fast(
     bls::Vector{Float64},
     pattern2,
-    ctx::RunCtx
+    ctx::RunCtx;
+    cache_mode::Symbol = :diag
 )
     nb = ctx.nb
     n_pat = length(pattern2)
+    w = Float64[p[2] for p in pattern2]
 
-    lnLs = zeros(Float64, n_pat)
+    # baseline per-pattern lnL (unweighted)
+    l0 = pattern_loglk_vec(ctx, bls, pattern2; cache_mode=cache_mode)
 
-    # IMPORTANT: size by maxthreadid(), not nthreads()
-    nslots = Threads.maxthreadid()
-    h_local = [zeros(Float64, nb.branch, nb.branch) for _ in 1:nslots]
-    g_local = [zeros(Float64, nb.branch) for _ in 1:nslots]
-    bls_work = [similar(bls) for _ in 1:nslots]
+    # D[k,i] = d lnL_k / d b_i  (unweighted per pattern)
+    D = Matrix{Float64}(undef, n_pat, nb.branch)
 
-    Threads.@threads for k in 1:n_pat
-        tid = Threads.threadid()
-        h = h_local[tid]
-        g = g_local[tid]
-        bw = bls_work[tid]
+    Threads.@threads for i in 1:nb.branch
+        step = (1 + bls[i]) / 1e6
 
-        lnLs[k] = delta_log_lk!(bw, bls, [1], [0.0], k, pattern2, ctx)
+        blp = copy(bls); blp[i] += step
+        blm = copy(bls); blm[i] -= step
 
-        thetas = zeros(Float64, nb.branch)
-        @inbounds for i in 1:nb.branch
-            step = (1 + bls[i]) / 1e6
-            fplus  = delta_log_lk!(bw, bls, [i], [ step], k, pattern2, ctx)
-            fminus = delta_log_lk!(bw, bls, [i], [-step], k, pattern2, ctx)
-            thetas[i] = (fplus - fminus) / (2 * step)
+        fp = pattern_loglk_vec(ctx, blp, pattern2; cache_mode=cache_mode)
+        fm = pattern_loglk_vec(ctx, blm, pattern2; cache_mode=cache_mode)
+
+        @inbounds @simd for k in 1:n_pat
+            D[k, i] = (fp[k] - fm[k]) / (2 * step)
         end
-
-        g .+= thetas
-        alpha = 1.0 / pattern2[k][2]
-        BLAS.ger!(alpha, thetas, thetas, h)
     end
 
-    hsum = zeros(Float64, nb.branch, nb.branch)
-    gsum = zeros(Float64, nb.branch)
-    for t in eachindex(h_local)
-        hsum .+= h_local[t]
-        gsum .+= g_local[t]
-    end
+    # gradient of total lnL: g_i = Σ_k w_k * D[k,i]
+    g = vec(transpose(D) * w)
 
-    h = -hsum
-    lnL0 = sum(lnLs)
-    return (h, gsum, lnL0, lnLs)
+    # STK OPG-style Hessian: H = - Σ_k w_k * d_k d_k'
+    Dw = D .* reshape(w, :, 1)
+    h = -(transpose(D) * Dw)
+
+    lnL0 = dot(w, l0)
+    return (h, g, lnL0, l0)
 end
 
 
@@ -546,6 +538,43 @@ end
 @inline function get_new_order_rev(bl_order::Dict{String, Dict{Any, Any}})
     sorted_keys = sort(collect(keys(bl_order["ape2mcmctree"])))
     [bl_order["ape2mcmctree"][k] for k in sorted_keys]
+end
+
+function pattern_loglk_vec(
+    ctx::RunCtx,
+    bl::Vector{Float64},
+    pattern2;
+    cache_mode::Symbol = :diag
+)
+    n_pat = length(pattern2)
+    out = Vector{Float64}(undef, n_pat)
+
+    nslots = Threads.maxthreadid()
+    caches = [cache_mode === :full ? PTFullCache() : PTDiagCache() for _ in 1:nslots]
+
+    Threads.@threads for i in 1:n_pat
+        tid = Threads.threadid()
+        site_pat = pattern2[i][1]
+        q = choose_q(ctx, i)
+        out[i] = do_phylo_log_lk(
+            ctx, q, bl, site_pat;
+            index = i,
+            pt_cache = caches[tid],
+            cache_mode = cache_mode
+        )
+    end
+    return out
+end
+
+function sum_phylo_log_lk_fast(
+    ctx::RunCtx,
+    bl::Vector{Float64},
+    pattern2;
+    cache_mode::Symbol = :diag
+)
+    lks = pattern_loglk_vec(ctx, bl, pattern2; cache_mode=cache_mode)
+    w = Float64[p[2] for p in pattern2]
+    return dot(w, lks)
 end
 
 function sum_phylo_log_lk(ctx::RunCtx, param::Vector{Float64}, pattern2; cache_mode::Symbol=:diag)
@@ -701,7 +730,7 @@ function main(ctx::RunCtx)
     cache_mode = get(ENV, "BL_CACHE_MODE", "diag") == "full" ? :full : :diag
 	#cache_mode = :full
     println("cache_mode = ", cache_mode)
-    sum_phylo_log_lk2 = (x::Vector{Float64}) -> sum_phylo_log_lk(ctx, x, pattern2; cache_mode=cache_mode)
+	sum_phylo_log_lk2 = (x::Vector{Float64}) -> sum_phylo_log_lk_fast(ctx, x, pattern2; cache_mode=cache_mode)
 
     lnL0 = sum_phylo_log_lk2(bls)
     println("Starting Hessian and gradient calculation.")
@@ -714,11 +743,11 @@ function main(ctx::RunCtx)
         lnL_for_compare = lnL0
         if occursin(r"^(finite_difference|fd|2nd_order|2nd_order_derivative)$", ctx.hessian_type)
             h = hessian_fd(bls, sum_phylo_log_lk2, nb.branch)
-            _, g_stk, lnL0_stk, _ = hessian_STK2004(bls, pattern2, ctx)
+			_, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx; cache_mode=cache_mode)
             g = g_stk
             # g = calculate_gradient(bls, sum_phylo_log_lk2)
         else
-            h, g_stk, lnL0_stk, _ = hessian_STK2004(bls, pattern2, ctx)
+			h, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx; cache_mode=cache_mode)
             g = g_stk
             lnL_for_compare = lnL0_stk
         end
