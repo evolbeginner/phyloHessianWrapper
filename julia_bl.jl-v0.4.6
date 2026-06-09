@@ -56,7 +56,6 @@ Base.@kwdef struct RunCtx
     hessian_outfile::Union{Nothing, String}
     hessian_type::String
     hessian_infile::Union{Nothing, String}
-	fd_scheme::Symbol
     is_compare::Bool
     transform_method
     treefile::String
@@ -455,9 +454,7 @@ function hessian_STK2004_fast(
     bls::Vector{Float64},
     pattern2,
     ctx::RunCtx;
-    cache_mode::Symbol = :diag,
-    fd_scheme::Symbol = :forward,   # :forward (default) or :central
-    step_scale::Float64 = 1e6
+    cache_mode::Symbol = :diag
 )
     nb = ctx.nb
     n_pat = length(pattern2)
@@ -470,28 +467,16 @@ function hessian_STK2004_fast(
     D = Matrix{Float64}(undef, n_pat, nb.branch)
 
     Threads.@threads for i in 1:nb.branch
-        step = (1 + bls[i]) / step_scale
+        step = (1 + bls[i]) / 1e6
 
-        if fd_scheme === :forward
-            blp = copy(bls); blp[i] += step
-            fp = pattern_loglk_vec(ctx, blp, pattern2; cache_mode=cache_mode)
+        blp = copy(bls); blp[i] += step
+        blm = copy(bls); blm[i] -= step
 
-            @inbounds @simd for k in 1:n_pat
-                D[k, i] = (fp[k] - l0[k]) / step
-            end
+        fp = pattern_loglk_vec(ctx, blp, pattern2; cache_mode=cache_mode)
+        fm = pattern_loglk_vec(ctx, blm, pattern2; cache_mode=cache_mode)
 
-        elseif fd_scheme === :central
-            blp = copy(bls); blp[i] += step
-            blm = copy(bls); blm[i] -= step
-
-            fp = pattern_loglk_vec(ctx, blp, pattern2; cache_mode=cache_mode)
-            fm = pattern_loglk_vec(ctx, blm, pattern2; cache_mode=cache_mode)
-
-            @inbounds @simd for k in 1:n_pat
-                D[k, i] = (fp[k] - fm[k]) / (2 * step)
-            end
-        else
-            error("Unknown fd_scheme=$(fd_scheme). Use :forward or :central.")
+        @inbounds @simd for k in 1:n_pat
+            D[k, i] = (fp[k] - fm[k]) / (2 * step)
         end
     end
 
@@ -756,13 +741,13 @@ function main(ctx::RunCtx)
         g = zeros(length(bls))
 
         lnL_for_compare = lnL0
-        if occursin(r"^(finite_difference|fd|2nd_order|2nd_order_derivative|2nd)$", ctx.hessian_type)
+        if occursin(r"^(finite_difference|fd|2nd_order|2nd_order_derivative)$", ctx.hessian_type)
             h = hessian_fd(bls, sum_phylo_log_lk2, nb.branch)
-			_, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx; cache_mode=cache_mode, fd_scheme=ctx.fd_scheme)
+			_, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx; cache_mode=cache_mode)
             g = g_stk
             # g = calculate_gradient(bls, sum_phylo_log_lk2)
         else
-			h, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx; cache_mode=cache_mode, fd_scheme=ctx.fd_scheme)
+			h, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx; cache_mode=cache_mode)
             g = g_stk
             lnL_for_compare = lnL0_stk
         end
@@ -844,7 +829,6 @@ function get_args_refactored()
         hessian_outfile = hessian_outfile,
         hessian_type = hessian_type,
         hessian_infile = hessian_infile,
-		fd_scheme = fd_scheme,
         is_compare = is_compare,
         transform_method = transform_method,
         treefile = treefile,

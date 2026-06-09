@@ -36,12 +36,12 @@ function fasta_to_phylip(input_file::String)
         println(file, " ", length(sequences), " ", seq_lengths[1])
         for (header, seq) in zip(headers, sequences)
             padded_header = rpad(header[1:min(end, 100)], 100)
-			println(padded_header)
-            println(file, padded_header, " ", seq)
+			#println(padded_header)
+            #println(file, padded_header, " ", seq)
         end
     end
 
-    println("✅ PHYLIP file created: $output_file")
+    #println("✅ PHYLIP file created: $output_file")
 end
 
 # Run from command line

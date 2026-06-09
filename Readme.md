@@ -77,7 +77,7 @@ mcmctree mcmctree.ctl
 ### Required
 - `-s <file>`: alignment in FASTA
 - `--reftree <file>`: unrooted reference tree (recommended from `paml_order_unroot.R`)
-- `-m <model>`: substitution model (e.g., `LG+G`, `LG+C60+G`, `EX2+G`)
+- `-m <model>`: substitution model (e.g., `LG+G`, `LG+C60+R+I`, `EX2+G`)
 - `--outdir <dir>`: output directory
 
 ### Optional
@@ -104,18 +104,18 @@ mcmctree mcmctree.ctl
 
 ## More Examples
 
-### LG+C60+G with PMSF (recommended for large datasets; see Wang et al., 2018)
+### LG+C60+I+R with PMSF (recommended for large datasets; see Wang et al., 2018)
 
 You can enable PMSF in either of two equivalent ways:
 
 ```bash
 # Option 1: include +PMSF in the model string
-ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+C60+G+PMSF --outdir outdir --force --cpu 10
+ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+C60+I+R+PMSF --outdir outdir --force --cpu 10
 ```
 
 ```bash
 # Option 2: use --pmsf flag
-ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+C60+G --pmsf --outdir outdir --force --cpu 10
+ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+C60+I+R --pmsf --outdir outdir --force --cpu 10
 ```
 
 ### LG+C60+G without mixture-weight optimization

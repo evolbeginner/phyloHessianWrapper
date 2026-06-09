@@ -1,3 +1,7 @@
+### v0.5.0 - 2026-06-08
+- **New features:** `--fd_scheme forward` to enable forward finite difference in gradient and STK2004 hessian calculation (1st-order derivative). Default: central.
+- **New features:** UDM subs models enabled, such as `-m POISSON+UDM0004CLR --tree_add_cmd "-mdef /mnt/hd1/home/sishuo/lab-tools/phyloHessian/substitution_model/merged_nexus/UDM_clr_iqtree_merged.nex`.
+
 ### v0.4.5 - 2026-06-06
 - **New features:** `paml_order_unroot.R` to automatically convert a rooted tree into unrooted (ref.tre) in the PAML way, so that there's no need to input `ref.tre` by yourself.
 

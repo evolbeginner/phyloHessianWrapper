@@ -18,6 +18,7 @@ bs_branchout_matrix = nothing
 hessian_outfile = nothing
 hessian_type = "STK2004"
 hessian_infile = nothing
+fd_scheme = :central
 is_compare = false
 
 pmsf_file = nothing
@@ -91,6 +92,10 @@ function parse_commandline()
 			help = "STK2004 (default) or fd (finite_difference)"
 			arg_type = String
 			default = "STK2004"
+		"--fd_scheme"
+			help = "forward finite difference (significantly faster for a single thread but slightly faster for multiple threads) or central finite difference (more accurate)"
+			arg_type = Symbol
+			default = :central
 		"--read_hessian", "--read_inBV", "--read_in_BV"
 			help = "read the in.BV file"
 			arg_type = String
@@ -140,6 +145,7 @@ is_tolerate = opt["tolerate"]
 #hessian_outfile = opt["hessian"]
 hessian_type = opt["hessian_type"]
 hessian_infile = opt["read_hessian"]
+fd_scheme = opt["fd_scheme"]
 
 is_compare = opt["compare"]
 if hessian_infile != nothing

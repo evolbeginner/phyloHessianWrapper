@@ -104,6 +104,11 @@ def execute_command(cmd, cmd_stdout=nil)
   output
 end
 
+def parse_rooted_tree()
+  message = "Have you parsed the rooted species tree into a unrooted tree in PAML's format by 'additional_scripts/paml_order_unroot.R rooted.tre unrooted.tre'?"
+  STDERR.puts message.blue
+  puts
+end
 
 #########################################
 def check_model_num(a, model)
@@ -235,6 +240,8 @@ end
 
 #########################################
 def show_help
+  parse_rooted_tree()
+
   puts <<~HELP
     #{File.basename($0)} - Phylogenetic analysis pipeline
 
@@ -251,16 +258,20 @@ def show_help
       --mfm MODEL               Mixture model specification
       --st TYPE                 Sequence type (AA/NT, default: AA)
       --sf FORMAT               Sequence format (fasta/phylip, default: fasta)
-      --pmsf TYPE               PMSF type (relaxed/stringent)
+      --pmsf TYPE               PMSF type (relaxed/stringent;
+                                  if not argument, default is 'relaxed'
+                                  i.e., the guide tree is the same as the species tree
+                                  This can be also specified by -m model+PMSF)
       --phylo_prog PROGRAM      Phylogeny program (iqtree/phyml, default: iqtree)
       --cpu N                   Number of CPUs (default: 4)
 
     Branch Length Options:
       --blmin FLOAT             Minimum branch length (default: 4e-6)
       --hessian_type TYPE       Hessian calculation method (default: SKT2004)
+      --fd_scheme TYPE          Finite difference method (central/forward, default: central)
 
     MCMCTree Options:
-      --run_mcmctree            Run MCMCTree after analysis
+      --run_mcmctree            Run MCMCtree after analysis
       --clock MODEL             Clock model (default: IR)
       --bd RATES                Birth-death rates (default: 1,1,0.1)
       --bsn BRANCHES            Branches for sigma2 (default: 1,2,3)
@@ -306,9 +317,11 @@ bsn = '1,2,3'
 blmin = 4e-6
 iqtree_add_arg0 = ['-mwopt', '-keep-ident'].join(' ')
 iqtree_add_arg = iqtree_add_arg0
+tree_add_cmd = ''
 julia_bl_add_arg = nil
 
 hessian_type = 'STK2004'
+fd_scheme = 'central'
 iqtree_indir = nil
 
 outdirs = Hash.new
@@ -324,7 +337,7 @@ opts = GetoptLong.new(
   ['--mfm', GetoptLong::REQUIRED_ARGUMENT],
   ['-r', '--reftre', '--ref_tre', '--reftree', '--ref_tree', GetoptLong::REQUIRED_ARGUMENT],
   ['--cpu', GetoptLong::REQUIRED_ARGUMENT],
-  ['--pmsf', GetoptLong::REQUIRED_ARGUMENT],
+  ['--pmsf', GetoptLong::OPTIONAL_ARGUMENT],
   ['--outdir', GetoptLong::REQUIRED_ARGUMENT],
   ['--force', GetoptLong::NO_ARGUMENT],
   ['--run_mcmctree', GetoptLong::NO_ARGUMENT],
@@ -334,13 +347,17 @@ opts = GetoptLong.new(
   ['--bd', GetoptLong::REQUIRED_ARGUMENT],
   ['--bsn', GetoptLong::REQUIRED_ARGUMENT],
   ['--hessian_type', GetoptLong::REQUIRED_ARGUMENT],
+  ['--fd_scheme', GetoptLong::REQUIRED_ARGUMENT],
   ['--no_mwopt', GetoptLong::NO_ARGUMENT],
   ['--iqtree_indir', GetoptLong::REQUIRED_ARGUMENT],
   ['--phylo_prog', GetoptLong::REQUIRED_ARGUMENT],
   ['--phyml', GetoptLong::NO_ARGUMENT],
   ['--iqtree', GetoptLong::NO_ARGUMENT],
+  ['--tree_add_cmd', '--iqtree_add_arg', GetoptLong::REQUIRED_ARGUMENT],
   ['-h', GetoptLong::NO_ARGUMENT]
 )
+
+show_help() if ARGV.empty?
 
 opts.each do |opt, value|
   case opt
@@ -359,7 +376,7 @@ opts.each do |opt, value|
     when '--cpu'
       cpu = value.to_i
     when '--pmsf'
-      pmsf = value
+      pmsf = value.empty? ? 'relaxed' : value
     when '-r', '--reftre', '--ref_tre', '--ref_tree', '--reftree'
       ref_treefile = value
     when '--outdir'
@@ -380,6 +397,8 @@ opts.each do |opt, value|
       bsn = value
     when '--hessian_type'
       hessian_type = value
+    when '--fd_scheme'
+      fd_scheme = value
     when '--no_mwopt'
       is_mwopt = false
     when '--phylo_prog'
@@ -390,10 +409,14 @@ opts.each do |opt, value|
       phylo_prog = :iqtree
     when '--iqtree_indir'
       iqtree_indir = value
+    when '--tree_add_cmd', '--iqtree_add_arg'
+      tree_add_cmd = value
     when '-h'
       show_help()
   end
 end
+
+iqtree_add_arg = [iqtree_add_arg, tree_add_cmd].join(' ')
 
 if not is_mwopt
   iqtree_add_arg0.gsub!('-mwopt', '')
@@ -469,7 +492,7 @@ begin
   execute_command(cmd, "Parsing the branch order ......")
   
   # julia_bl
-  cmd = "#{JULIA} -t #{cpu} #{JULIA_BL} --basics_indir #{outdirs[:basics]} -t #{st} --tree #{out_treefile} -b #{branchout_matrix} -m #{non_mfm} --mfm #{mfm} --outdir #{outdirs[:inBV]} --force #{julia_bl_add_arg} --hessian_type #{hessian_type} 2>#{outdir}/error"
+  cmd = "#{JULIA} -t #{cpu} #{JULIA_BL} --basics_indir #{outdirs[:basics]} -t #{st} --tree #{out_treefile} -b #{branchout_matrix} -m #{non_mfm} --mfm #{mfm} --outdir #{outdirs[:inBV]} --force #{julia_bl_add_arg} --hessian_type #{hessian_type} --fd_scheme #{fd_scheme} 2>#{outdir}/error"
   execute_command(cmd, "Calculating Hessian. Takes long time ......")
 
   phylip = create_phylip(seqfile) if phylip.nil?

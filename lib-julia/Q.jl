@@ -93,7 +93,7 @@ function read_paml_matrix(model; model_dir=joinpath(@__DIR__, "../substitution_m
 	q_pis = Vector()
 
 	paml_matrix_text = nothing
-	for i ∈ ["regular", "mfm"], suffix ∈ [".dat", ".nex"]
+	for i ∈ ["regular", "mfm", "mfm/UDM"], suffix ∈ [".dat", ".nex"]
 		model_dat_file = joinpath(model_dir, i, model * suffix)
 		if isfile(model_dat_file)
 			paml_matrix_text = model_dat_file
