@@ -51,14 +51,15 @@ function parse_model_nex(infile)
 		line = strip(raw_line)
 
 		# e.g. frequency UDM0008CLR_C0000 = ...;
-		m_comp = match(r"^frequency\s+(UDM[0-9]+L?CLR_C[0-9]+)\s*=\s*(.+);$", line)
-		if m_comp != nothing
+		#m_comp = match(r"^frequency\s+(UDM[0-9]+L?CLR_C[0-9]+)\s*=\s*(.+);$", line)
+		m_comp = match(r"^frequency\s+([^ ]+)\s*=\s*(.+);$", line)
+		if m_comp != nothing && (! occursin("FMIX", line))
 			component_freq[m_comp.captures[1]] = line
 			continue
 		end
 
 		# e.g. frequency UDM0008CLR = FMIX{UDM0008CLR_C0000:1.0:0.3,...};
-		m_mix = match(r"^frequency\s+(UDM[0-9]+L?CLR)\s*=\s*FMIX\{(.+)\};$", line)
+		m_mix = match(r"^frequency\s+(\S+)\s*=\s*FMIX\s*\{(.*)\}\s*;?$"i, strip(line))
 		if m_mix != nothing
 			model_name = m_mix.captures[1]
 			fmix_body = m_mix.captures[2]

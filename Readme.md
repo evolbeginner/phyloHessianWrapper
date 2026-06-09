@@ -1,4 +1,3 @@
-```markdown
 # PhyloHessianWrapper
 
 Estimate phylogenetic gradients/Hessian matrices for divergence-time inference with **MCMCtree** approximate likelihood (dos Reis & Yang, 2011), including complex amino-acid models.
@@ -128,6 +127,12 @@ ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m L
 
 ```bash
 ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m EX2+G --outdir outdir --force --cpu 10 --phylo_prog phyml
+```
+
+### use UDM0004CLR (see [https://github.com/dschrempf/edcluster](UDM profile-mixture models))
+
+```bash
+ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+UDM0004CLR+G --outdir UDM0004CLR --force --cpu 1 --tree_add_cmd "-mdef substitution_model/merged_nexus/UDM_clr_iqtree_merged.nex
 ```
 
 ---
