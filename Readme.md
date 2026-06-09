@@ -132,7 +132,7 @@ ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m E
 ### use UDM0004CLR (see [UDM profile-mixture models](https://github.com/dschrempf/edcluster))
 
 ```bash
-ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+UDM0004CLR+G --outdir LG+UDM0004CLR+G --force --cpu 1 --tree_add_cmd "-mdef substitution_model/merged_nexus/UDM_clr_iqtree_merged.nex
+ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+UDM0004CLR+G --outdir LG+UDM0004CLR+G --force --cpu 1 --tree_add_cmd "-mdef substitution_model/merged_nexus/UDM_clr_iqtree_merged.nex"
 ```
 
 ### LG+C60+G with forward finite diff method
