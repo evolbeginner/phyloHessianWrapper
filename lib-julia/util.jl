@@ -29,6 +29,10 @@ function get_iqtree_params(iqtree_file, phyml_file)
 		inv_info = Dict(:is_do_inv=>true, :inv_prop=>props[1])
 		rs = iqtree_params[:rs][2:end]
 		props = iqtree_params[:props][2:end]
+		if isempty(rs)
+			rs = [1.0]
+			props = [1.0]
+		end
 		if phyml_file != nothing
 			props = props ./ sum(iqtree_params[:props])
 			rs = rs ./ sum(props)
@@ -201,6 +205,9 @@ function get_params_from_iqtree(infile)
 	Fs = Vector{Vector{Float64}}()
 	Qrs = Vector{Float64}()
 	freqs = Vector{Float64}()
+	alpha = nothing
+	ncat = 1
+	inv_prop = nothing
 
 	# infile: iqtree_file
 	is_rate_prop = false
@@ -213,6 +220,22 @@ function get_params_from_iqtree(infile)
 	for line in lines
 		(line == "") ? continue : nothing #skip empty lines
 		line_arr = split(line)
+
+		m = match(r"Gamma shape alpha:\s+([-+0-9.eE]+)", line)
+		if m != nothing
+			alpha = parse(Float64, m[1])
+		end
+
+		m = match(r"Gamma with\s+(\d+)\s+categor", line)
+		if m != nothing
+			ncat = parse(Int, m[1])
+		end
+
+		m = match(r"Proportion of invariant sites:\s+([-+0-9.eE]+)", line)
+		if m != nothing
+			inv_prop = parse(Float64, m[1])
+		end
+
 		# set status
 		if match(r"^ Category", line) != nothing
 			is_rate_prop = true
@@ -258,6 +281,14 @@ function get_params_from_iqtree(infile)
 		end
 	end
 	close(fh)
+
+	if ncat != 1 && isempty(rs) && alpha != nothing
+		rs, props = generate_rs_props_from_alpha(alpha, ncat)
+	end
+	if inv_prop != nothing
+		rs = [0.0; rs]
+		props = [inv_prop; props .* (1.0 - inv_prop)]
+	end
 
 	return(Dict(:rs=>rs, :props=>props, :Fs=>Fs, :Qrs=>Qrs, :freqs=>freqs))
 end
@@ -367,7 +398,7 @@ function generate_rs_props_from_alpha(α, ncat=4)
 end
 
 
-function get_Qrs_freqs(Fs, Qrs, freqs, is_pmsf, pmsf_file, site2pattern, sub_model, mix_freq_model)
+function get_Qrs_freqs(Fs, Qrs, freqs, is_pmsf, pmsf_file, site2pattern, sub_model, mix_freq_model; seq_type=nothing, iqtree_file=nothing)
 	q_pis_sites = Vector()
 	q_pis = Vector()
 	if(is_pmsf)
@@ -375,19 +406,22 @@ function get_Qrs_freqs(Fs, Qrs, freqs, is_pmsf, pmsf_file, site2pattern, sub_mod
 		pmsf_pis = convert_pmsf_file_by_site(pmsf_pis, site2pattern)
 		# Qs q_pis_sites
 		#q_pis_sites = generate_Qs(sub_model, pmsf_pis)
-		generate_Qs!(q_pis_sites, sub_model, pmsf_pis)
+		generate_Qs!(q_pis_sites, sub_model, pmsf_pis, seq_type=seq_type, iqtree_file=iqtree_file)
 	else
 		is_mix_freq = false
 		if mix_freq_model != nothing || mix_freq_model == ""
 			Fs = isempty(Fs) ? Fs : [ first(Fs) ]
-			q_pis, is_mix_freq = generate_Q(mix_freq_model) 
+			q_pis, is_mix_freq = generate_Q(mix_freq_model, seq_type=seq_type, iqtree_file=iqtree_file) 
 			[ push!(Fs, fs) for fs in map(x->x.Pi, q_pis) ]
-			q_pis, _ = generate_Q(sub_model)
+			q_pis, _ = generate_Q(sub_model, seq_type=seq_type, iqtree_file=iqtree_file)
 		else
-			q_pis, _ = generate_Q(sub_model) 
+			q_pis, _ = generate_Q(sub_model, seq_type=seq_type, iqtree_file=iqtree_file) 
 		end
 		println(std_outfh, join(["q_pis size:", size(q_pis)], "\t") * "\n")
 		
+		if seq_type == "DNA"
+			Fs = Vector{Vector{Float64}}()
+		end
 		if (! isempty(Fs)) && (! isempty(Fs[1]))
 			q_pis = generate_Q_w_F(q_pis, Fs, is_mix_freq)
 		end
@@ -496,5 +530,3 @@ function mkdir_with_force(outdir::String, is_force::Bool=false, is_tolerate::Boo
         end
     end
 end
-
-

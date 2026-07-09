@@ -2,11 +2,6 @@
 
 
 #########################################
-# last updated 2026-04-13
-# well logged
-
-
-#########################################
 $VERBOSE = nil
 # Base directory of THIS Ruby file
 DIR = File.expand_path(__dir__) unless defined?(DIR)
@@ -56,6 +51,7 @@ RUBY = 'ruby'
 
 REGULAR_DIR = File.join(DIR, 'substitution_model', 'regular')
 MFM_DIR = File.join(DIR, 'substitution_model', 'mfm')
+DNA_MODELS = %w[JC JC69 F81 K80 K2P HKY HKY85 TN TN93 TNe K81 K3P K81u TPM2 TPM2u TPM3 TPM3u TIM TIMe TIM2 TIM2e TIM3 TIM3e TVM TVMe SYM GTR].freeze
 
 DO_MCMCTREE = File.join(ADD_SCRIPTS_DIR, 'do_mcmctree.rb')
 MFATOPHY = File.expand_path(File.join(ADD_SCRIPTS_DIR, 'MFAtoPHY.jl'))
@@ -142,6 +138,11 @@ def parse_model_name(model)
 end
 
 
+def dna_model?(model)
+  model.to_s.split('+').any? { |m| DNA_MODELS.include?(m.upcase) }
+end
+
+
 def run_mcmctree(outdirs, tree_indir, phylip, clock, bd, bsn)
   outdirs[:date] = File.join(File.dirname(outdirs[:inBV]), 'date')
   mkdir_with_force(outdirs[:date])
@@ -161,14 +162,15 @@ def create_phylip(seqfile)
 end
 
 
-def run_iqtree(treefile, model, pmsf, seqfile, outdir, blmin, iqtree_add_arg0, iqtree_add_arg, cpu)
+def run_iqtree(st, treefile, model, pmsf, seqfile, outdir, blmin, iqtree_add_arg0, iqtree_add_arg, cpu)
   output_file = File.join(outdir, 'iqtree_output.log')
   
   if !pmsf.nil?
     cmd = "#{IQTREE} -te #{treefile} -m #{model} -s #{seqfile} -pre #{outdir}/iqtree -redo -wsl -quiet #{iqtree_add_arg0} -T #{cpu}"
   end
   
-  cmd = "#{IQTREE} -blfix #{treefile} -m POISSON -s #{seqfile} -pre #{outdir}/iqtree -redo -wsl -quiet #{iqtree_add_arg0} -T #{cpu}"
+  test_model = st == 'AA' ? 'POISSON' : 'JC'
+  cmd = "#{IQTREE} -blfix #{treefile} -m #{test_model} -s #{seqfile} -pre #{outdir}/iqtree -redo -wsl -quiet #{iqtree_add_arg0} -T #{cpu}"
   ` #{cmd} `
   
   cmd = "#{IQTREE} -te #{outdir}/iqtree.treefile -m #{model} -s #{seqfile} -pre #{outdir}/iqtree -redo -wsl -quiet #{iqtree_add_arg} -blmin #{blmin} -T #{cpu}"
@@ -364,7 +366,7 @@ opts.each do |opt, value|
     when '-s', '--aln'
       seqfile = value
     when '--st'
-      seq_type = value
+      st = value
     when '-f', '--sf'
       seq_format = value
     when '-t'
@@ -453,7 +455,13 @@ begin
   branchout_matrix = File.join(outdirs[:bl], 'branch_out.matrix')
   in_BV = File.join(outdir, 'in.BV')
   # parse mfm and regular model: LG+C20 will be parsed as mfm=C20 & non_mfm=LG
-  non_mfm, mfm = parse_model_name(model)
+  if st == 'DNA'
+    non_mfm = model
+    mfm = 'nothing'
+  elsif st == 'AA'
+    non_mfm, mfm = parse_model_name(model)
+  end
+  is_dna_model = true if st == 'DNA'
 
   if not iqtree_indir.nil?
     FileUtils.rm_rf(outdirs[:iqtree])
@@ -468,9 +476,12 @@ begin
     end
     case phylo_prog
       when :iqtree
-        run_iqtree(treefile, model, pmsf, seqfile, outdirs[:iqtree], blmin, iqtree_add_arg0, iqtree_add_arg, cpu)
+        run_iqtree(st, treefile, non_mfm, pmsf, seqfile, outdirs[:iqtree], blmin, iqtree_add_arg0, iqtree_add_arg, cpu)
         out_treefile = File.join(outdirs[:iqtree], 'iqtree.treefile')
       when :phyml
+        if is_dna_model
+          log_fatal_error('DNA models are only supported through iqtree in this wrapper')
+        end
         old_wd = Dir.pwd
         FileUtils.cp_r([treefile, seqfile], outdirs[:phyml])
         Dir.chdir(outdirs[:phyml])
@@ -492,7 +503,8 @@ begin
   execute_command(cmd, "Parsing the branch order ......")
   
   # julia_bl
-  cmd = "#{JULIA} -t #{cpu} #{JULIA_BL} --basics_indir #{outdirs[:basics]} -t #{st} --tree #{out_treefile} -b #{branchout_matrix} -m #{non_mfm} --mfm #{mfm} --outdir #{outdirs[:inBV]} --force #{julia_bl_add_arg} --hessian_type #{hessian_type} --fd_scheme #{fd_scheme} 2>#{outdir}/error"
+  julia_iqtree_arg = is_dna_model ? "--iqtree #{outdirs[:iqtree]}/iqtree.iqtree" : ''
+  cmd = "#{JULIA} -t #{cpu} #{JULIA_BL} --basics_indir #{outdirs[:basics]} --st #{st} --tree #{out_treefile} -b #{branchout_matrix} -m #{non_mfm} --mfm #{mfm} --outdir #{outdirs[:inBV]} --force #{julia_bl_add_arg} #{julia_iqtree_arg} --hessian_type #{hessian_type} --fd_scheme #{fd_scheme} 2>#{outdir}/error"
   execute_command(cmd, "Calculating Hessian. Takes long time ......")
 
   phylip = create_phylip(seqfile) if phylip.nil?
@@ -506,5 +518,3 @@ rescue => e
 ensure
   $log.close if $log
 end
-
-

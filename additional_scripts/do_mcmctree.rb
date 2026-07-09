@@ -344,7 +344,7 @@ if __FILE__ == $0
         clock = value
         clock = 1 if clock =~ /^SR|STR$/
         clock = 2 if clock == 'IR' or clock == 'ILN'
-        clock = 3 if clock == 'AR' or clock == 'gbm'
+        clock = 3 if %w[AR gbm ou].include?(clock.to_s.downcase)
         #clock = 32 if clock == 'AR' or clock == 'gbm' or clock == 'gbm_full'
         STDOUT.puts "clock = #{clock}".colorize(:red)
       when '--BDparas', '--BD', '--bd'

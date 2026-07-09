@@ -3,6 +3,7 @@
 
 ################################################
 using DelimitedFiles
+using LinearAlgebra
 #using DataFrames
 #using CSV
 #using StaticArrays
@@ -42,10 +43,10 @@ function convert_pmsf_file_by_site(pmsf_pis, site2pattern)
 end
 
 
-function generate_Qs!(q_pis_sites, sub_model, pmsf_pis)
+function generate_Qs!(q_pis_sites, sub_model, pmsf_pis; seq_type=nothing, iqtree_file=nothing)
 	#Q = [-1 1/3 1/3 1/3; 1/3 -1 1/3 1/3; 1/3 1/3 -1 1/3; 1/3 1/3 1/3 -1]
 	#Qs = [Q for _ in 1:num_patterns]
-	q_pis0, _ = generate_Q(sub_model) 
+	q_pis0, _ = generate_Q(sub_model, seq_type=seq_type, iqtree_file=iqtree_file) 
 	for i in 1:size(pmsf_pis, 1)
 		q_pis = generate_Q_w_F(q_pis0, [pmsf_pis[i,:]])
 		#get_eigen!(q_pis[1])
@@ -55,8 +56,124 @@ function generate_Qs!(q_pis_sites, sub_model, pmsf_pis)
 end
 
 
-function generate_Q(model)
+const DNA_STATES = ["A", "C", "G", "T"]
+const DNA_STATE_INDEX = Dict(state => i for (i, state) in enumerate(DNA_STATES))
+const DNA_SUB_MODELS = Set(["JC", "JC69", "F81", "K2P", "K80", "HKY", "HKY85", "TN", "TN93", "TNEF", "TPM2", "TPM3", "TIM", "TIM2", "TIM3", "TVM", "SYM", "GTR"])
+
+
+function generate_Q(model; seq_type=nothing, iqtree_file=nothing)
+	model_name = uppercase(split(model, '+')[1])
+	if seq_type == "DNA" || model_name in DNA_SUB_MODELS
+		if iqtree_file != nothing && isfile(iqtree_file)
+			return generate_DNA_Q_from_iqtree(iqtree_file)
+		elseif model_name in ["JC", "JC69"]
+			return generate_DNA_Q(fill(1.0, 4, 4), fill(0.25, 4)), false
+		else
+			error("DNA substitution model $model needs an IQ-TREE .iqtree file with estimated DNA rates/frequencies.")
+		end
+	end
 	q_pis, is_mix_freq = read_paml_matrix(model)
+end
+
+
+function generate_DNA_Q_from_iqtree(iqtree_file)
+	R, Pi, Q = read_DNA_params_from_iqtree(iqtree_file)
+	q_pi = Q === nothing ? generate_DNA_Q(R, Pi) : generate_DNA_Q_from_matrix(Q, Pi)
+	get_eigen!(q_pi)
+	return([q_pi], false)
+end
+
+
+function generate_DNA_Q(R, Pi)
+	Pi = Pi ./ sum(Pi)
+	R = copy(R)
+	for i in 1:length(Pi)
+		R[i, i] = 0.0
+	end
+	Q = [R[i, j] * Pi[j] for i in 1:length(Pi), j in 1:length(Pi)]
+	q_pi = Q_Pi(Q, Pi, R, nothing, nothing, nothing)
+	fill_diag_for_Q!(q_pi)
+	return(q_pi)
+end
+
+
+function generate_DNA_Q_from_matrix(Q, Pi)
+	Pi = Pi ./ sum(Pi)
+	Q = copy(Q)
+	q_pi = Q_Pi(Q, Pi, nothing, nothing, nothing, nothing)
+	q_pi.Q .= q_pi.Q .- diagm(diag(q_pi.Q))
+	fill_diag_for_Q!(q_pi)
+	return(q_pi)
+end
+
+
+function read_DNA_params_from_iqtree(iqtree_file)
+	R = ones(Float64, 4, 4)
+	Pi = fill(NaN, 4)
+	Q = Matrix{Float64}(undef, 0, 0)
+
+	is_rate = false
+	is_freq = false
+	is_q = false
+	q_rows = Vector{Vector{Float64}}()
+
+	for line in eachline(iqtree_file)
+		if occursin(r"^Rate parameter R:", line)
+			is_rate = true
+			is_freq = false
+			is_q = false
+			continue
+		elseif occursin(r"^State frequencies", line)
+			is_rate = false
+			is_freq = true
+			is_q = false
+			continue
+		elseif occursin(r"^Rate matrix Q:", line)
+			is_rate = false
+			is_freq = false
+			is_q = true
+			empty!(q_rows)
+			continue
+		end
+
+		if is_rate
+			m = match(r"^\s*([ACGT])-([ACGT]):\s*([-+0-9.eE]+)", line)
+			if m != nothing
+				i = DNA_STATE_INDEX[m[1]]
+				j = DNA_STATE_INDEX[m[2]]
+				R[i, j] = R[j, i] = parse(Float64, m[3])
+			elseif !isempty(strip(line))
+				is_rate = false
+			end
+		elseif is_freq
+			m = match(r"^\s*pi\(([ACGT])\)\s*=\s*([-+0-9.eE]+)", line)
+			if m != nothing
+				Pi[DNA_STATE_INDEX[m[1]]] = parse(Float64, m[2])
+			elseif !isempty(strip(line))
+				is_freq = false
+			end
+		elseif is_q
+			m = match(r"^\s*([ACGT])\s+(.+)$", line)
+			if m != nothing
+				vals = parse.(Float64, split(strip(m[2])))
+				if length(vals) == 4
+					push!(q_rows, vals)
+					if length(q_rows) == 4
+						Q = reduce(vcat, reshape.(q_rows, 1, :))
+						is_q = false
+					end
+				end
+			elseif !isempty(strip(line))
+				is_q = false
+			end
+		end
+	end
+
+	if any(isnan, Pi)
+		Pi .= 0.25
+	end
+
+	return(R, Pi, isempty(Q) ? nothing : Q)
 end
 
 
@@ -169,10 +286,10 @@ end
 
 function get_eigen!(q_pi)
 	Q = q_pi.Q
-	eigen_decomp = eigen(Q)
+	eigen_decomp = LinearAlgebra.eigen(Q)
 	U = eigen_decomp.vectors
 	Lambda = eigen_decomp.values
-	U_inv = inv(U)
+	U_inv = LinearAlgebra.inv(U)
 
 	#U = SMatrix{size(U,1), size(U,2)}(U)
 	#U_inv = SMatrix{size(U,1), size(U,2)}(U_inv)
@@ -239,5 +356,3 @@ end
 
 ################################################
 #generate_Q("EX2")
-
-

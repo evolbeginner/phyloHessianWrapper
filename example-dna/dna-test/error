@@ -1,0 +1,15 @@
+ERROR: LoadError: ArgParseSettingsError("malformed table: description fields must be preceded by the arg name")
+Stacktrace:
+ [1] serror(x::Any)
+   @ ArgParse ~/.julia/packages/ArgParse/mpp98/src/settings.jl:27
+ [2] _add_arg_table!(s::Any, x::Any)
+   @ ArgParse ~/.julia/packages/ArgParse/mpp98/src/settings.jl:835
+ [3] var"@add_arg_table"(__source__::LineNumberNode, __module__::Module, s::Any, x::Any)
+   @ ArgParse ~/.julia/packages/ArgParse/mpp98/src/deprecated.jl:40
+ [4] include(fname::String)
+   @ Base.MainInclude ./client.jl:489
+ [5] top-level scope
+   @ ~/lab-tools/phyloHessian/julia_bl.jl:8
+in expression starting at /mnt/hd1/home/sishuo/lab-tools/phyloHessian/lib-julia/readArg.jl:32
+in expression starting at /mnt/hd1/home/sishuo/lab-tools/phyloHessian/lib-julia/readArg.jl:29
+in expression starting at /mnt/hd1/home/sishuo/lab-tools/phyloHessian/julia_bl.jl:8

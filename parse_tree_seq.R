@@ -47,6 +47,8 @@ AAs <- c("A", "R", "N", "D", "C", "Q", "E", "G", "H", "I", "L", "K", "M", "F", "
 AA_indices <- c(1:20, 999)
 AA_list <- setNames(AA_indices, AAs)
 
+DNA_list <- setNames(c(1:4, 999), c("A", "C", "G", "T", "-"))
+
 format <- 'fasta'
 
 
@@ -69,12 +71,9 @@ rename_trait <- function(x){
 		else stop("the names of 'x' and the tip labels of the tree do not match: the former were ignored in the analysis.")
 	}
 
-	if (!is.factor(x)) {
-		x <- factor(x)
-		nl <- nlevels(x)
-		#lvls <- levels(x)
-		x <- as.integer(x)
-	}
+	x <- toupper(x)
+	x <- unname(DNA_list[x])
+	x[is.na(x)] <- 999
 	x
 }
 
@@ -83,7 +82,6 @@ get_v_freq <- function(v){
 	u <- lapply(v, function(x){paste(x, collapse='!')})
 	t <- table(unlist(u))
 	t_names_split <- lapply(names(t), function(x){unlist(strsplit(x,"!"), use.name=F)})
-    print(t_names_split)
 	l <- vector("list", length(rownames(t)))
 	for(i in 1:length(rownames(t))){
 		l[[i]] <- list(as.integer(t_names_split[[i]]), t[[i]])
@@ -437,8 +435,9 @@ nl <- nlevels(factor(unlist(v, use.names=F)))
 if(type == "DNA"){
     v <- lapply(v, rename_trait)
     cat("Alignment length:", length(v), "\n")
-    v <- get_v_freq(v)
-    cat("No. of pattern:", length(v), "\n")
+    v <- lapply(v, function(x) list(x, 1))
+    site <- seq_along(v)
+    cat("No. of site patterns:", length(v), "\n")
 } else if(type == "AA"){
     v <- lapply(v, function(x) unname(AA_list[toupper(x)]) )
     for (i in seq_along(v)) {
@@ -558,5 +557,3 @@ q()
 -numDeriv::grad(sum_phylo_log_lk, opt$par)
 -pracma::grad(sum_phylo_log_lk, c(0.092508, 0.196664, 0.019797, 0.373649, 0.569339) )
 -pracma::grad(sum_phylo_log_lk, c(0.0925074480, 0.1966638668, 0.0200486974, 0.3731064023, 0.5688556173) )
-
-

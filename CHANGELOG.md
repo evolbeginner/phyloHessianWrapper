@@ -1,3 +1,6 @@
+### v0.6.0 - 2026-07-09
+- **New features:** DNA subs models allowed by `--st DNA -m GTR`
+
 ### v0.5.0 - 2026-06-08
 - **New features:** `--fd_scheme forward` to enable forward finite difference in gradient and STK2004 hessian calculation (1st-order derivative). Default: central.
 - **New features:** UDM subs models enabled, such as `-m POISSON+UDM0004CLR --tree_add_cmd "-mdef /mnt/hd1/home/sishuo/lab-tools/phyloHessian/substitution_model/merged_nexus/UDM_clr_iqtree_merged.nex`.

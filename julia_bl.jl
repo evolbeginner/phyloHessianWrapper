@@ -1,10 +1,5 @@
 #! /bin/env julia
 
-######################################################################
-# v0.24.1 (fix +I log-likelihood: apply invariant mixture only to invariant sites)
-# v0.24.2 (speed: cache exp(Lambda * bl * r) within each full lnL evaluation;
-#          avoid computing STK Hessian when FD Hessian requested)
-# v0.25.0 (add alternative full P(t)=exp(Qrt) cache mode; keep diag cache default)
 
 ######################################################################
 const LIB = "lib-julia"
@@ -577,9 +572,9 @@ function pattern_loglk_vec(
             pt_cache = caches[tid],
             cache_mode = cache_mode
         )
-    end
-    return out
-end
+	    end
+	    return out
+	end
 
 function sum_phylo_log_lk_fast(
     ctx::RunCtx,
@@ -816,10 +811,11 @@ function get_args_refactored()
 
     println(now())
     nb, pattern, all_children, cherry_nodes, descendants, site2pattern = read_basics(basics_indir)
-    nl = type == "AA" ? 20 : 4
+    nl = st == "AA" ? 20 : 4
 
     Qrs, q_pis, q_pis_sites, freqs = get_Qrs_freqs(
-        Fs, Qrs, freqs, is_pmsf, pmsf_file, site2pattern, sub_model, mix_freq_model
+        Fs, Qrs, freqs, is_pmsf, pmsf_file, site2pattern, sub_model, mix_freq_model;
+        seq_type=type, iqtree_file=iqtree_file
     )
 
     all_children_vec = dict_children_to_vec(all_children, nb.tip + nb.node)
@@ -861,4 +857,3 @@ if abspath(PROGRAM_FILE) == @__FILE__
     ctx = get_args_refactored()
     main(ctx)
 end
-

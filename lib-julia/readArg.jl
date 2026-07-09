@@ -30,10 +30,10 @@ function parse_commandline()
     opt = ArgParseSettings()
 
     @add_arg_table opt begin
-		"--type", "-t"
-			help = "type of seq"
+		"--st"
+			help = "sequence type"
 			arg_type = String
-			default = "DNA"
+			default = "AA"
         "--indir"
 			help = "indir"
             arg_type = String
@@ -114,11 +114,11 @@ end
 
 
 function check_input(opt)
-	if ! haskey(opt, "type")
-		error("type not given")
+	if ! haskey(opt, "st")
+		error("st (seq type) not given")
 	end
-	if ! (opt["type"] in ["AA", "DNA"])
-		error("type has to be AA or DNA")
+	if ! (opt["st"] in ["AA", "DNA"])
+		error("seq type has to be AA or DNA")
 	end
 end
 
@@ -129,7 +129,7 @@ opt = parse_commandline()
 
 check_input(opt)
 
-type = opt["type"]
+st = opt["st"]
 indir = opt["indir"]
 basics_indir = opt["basics_indir"]
 treefile = opt["tree"]
@@ -186,5 +186,4 @@ pmsf_file = opt["pmsf"]
 is_pmsf = (pmsf_file != nothing) ? true : false
 
 transform_method = opt["transform"]
-
 

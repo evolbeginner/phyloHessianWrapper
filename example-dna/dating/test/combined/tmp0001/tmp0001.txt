@@ -1,0 +1,25 @@
+
+        20          1  P
+
+t7                              A
+t19                             A
+t11                             A
+t2                              A
+t13                             A
+t18                             A
+t1                              A
+t12                             A
+t9                              A
+t5                              A
+t17                             A
+t14                             A
+t10                             A
+t6                              A
+t20                             A
+t16                             A
+t8                              A
+t15                             A
+t3                              A
+t4                              A
+
+

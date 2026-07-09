@@ -1,0 +1,4 @@
+ Rscript /mnt/hd1/home/sishuo/lab-tools/dating/hessian/sim_tree.R -n 20 -m -3.7 --sd 0.2 --s2 0.1 --drift 0 --r_opt 0.1 --theta 0.1          -b 1 -d 1 --age 10 --rho 0.0001 -o ou0.1-theta1-age10-tip20.DNA/sim/tree --clock ou  
+
+bash /mnt/hd1/home/sishuo/lab-tools/dating/hessian/do_iqtree_sim_mcmctree.sh --force --outdir ou0.1-theta1-age10-tip20.DNA/sim/alignment --indir ou0.1-theta1-age10-tip20.DNA/sim/tree -m GTR --length 300
+
