@@ -1,0 +1,25 @@
+Executing: iqtree -te example-dna/GTR+G2/iqtree/iqtree.treefile -m GTR+G -s example-dna/sim/alignment/combined.fas -pre example-dna/GTR+G2/iqtree/iqtree -redo -wsl -quiet -mwopt -keep-ident  -blmin 4.0e-06 -T 10
+
+Executing: Rscript /mnt/hd1/home/sishuo/lab-tools/phyloHessian/parse_tree_seq.R -s example-dna/sim/alignment/combined.fas -t example-dna/GTR+G2/iqtree/iqtree.treefile --cpu 10 --julia_outdir example-dna/GTR+G2/julia --force --type DNA
+Alignment length: 300 
+No. of site patterns: 300 
+Executing: bash /mnt/hd1/home/sishuo/lab-tools/phyloHessian/additional_scripts/generate_branch_out_mat.sh -t example-dna/GTR+G2/iqtree/iqtree.treefile --ref_tree example-dna/ref.tre --outdir example-dna/GTR+G2/bl --force
+Rscript /mnt/hd1/home/sishuo/lab-tools/phyloHessian/additional_scripts/align_bl.R example-dna/GTR+G2/iqtree/iqtree.treefile example-dna/GTR+G2/bl/branch_out > example-dna/GTR+G2/bl/branch_out.matrix
+Executing: julia -t 10 /mnt/hd1/home/sishuo/lab-tools/phyloHessian/julia_bl.jl --basics_indir example-dna/GTR+G2/julia --st DNA --tree example-dna/GTR+G2/iqtree/iqtree.treefile -b example-dna/GTR+G2/bl/branch_out.matrix -m GTR+G --mfm nothing --outdir example-dna/GTR+G2/inBV --force  --iqtree example-dna/GTR+G2/iqtree/iqtree.iqtree --hessian_type STK2004 --fd_scheme central 2>example-dna/GTR+G2/error
+
+2026-07-18T08:17:39.747
+
+rs:	[0.9601, 0.9894, 1.01, 1.041]
+props:	[0.25, 0.25, 0.25, 0.25]
+freqs:	Float64[]
+Qrs:	Float64[]
+2026-07-18T08:17:41.910
+2026-07-18T08:17:46.261
+cache_mode = diag
+Starting Hessian and gradient calculation.
+2026-07-18T08:17:47.551
+best lnL	-5489.947784422602	
+
+2026-07-18T08:17:49.542
+
+Executing: julia /mnt/hd1/home/sishuo/lab-tools/phyloHessian/additional_scripts/MFAtoPHY.jl example-dna/sim/alignment/combined.fas

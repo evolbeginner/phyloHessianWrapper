@@ -19,6 +19,7 @@ hessian_outfile = nothing
 hessian_type = "STK2004"
 hessian_infile = nothing
 fd_scheme = :central
+cache_mode = :diag
 is_compare = false
 
 pmsf_file = nothing
@@ -96,6 +97,10 @@ function parse_commandline()
 			help = "forward finite difference (significantly faster for a single thread but slightly faster for multiple threads) or central finite difference (more accurate)"
 			arg_type = Symbol
 			default = :central
+		"--cache_mode"
+			help = "transition-probability cache mode: diag (default) or full"
+			arg_type = Symbol
+			default = :diag
 		"--read_hessian", "--read_inBV", "--read_in_BV"
 			help = "read the in.BV file"
 			arg_type = String
@@ -119,6 +124,9 @@ function check_input(opt)
 	end
 	if ! (opt["st"] in ["AA", "DNA"])
 		error("seq type has to be AA or DNA")
+	end
+	if ! (opt["cache_mode"] in [:diag, :full])
+		error("cache_mode has to be diag or full")
 	end
 end
 
@@ -146,6 +154,7 @@ is_tolerate = opt["tolerate"]
 hessian_type = opt["hessian_type"]
 hessian_infile = opt["read_hessian"]
 fd_scheme = opt["fd_scheme"]
+cache_mode = opt["cache_mode"]
 
 is_compare = opt["compare"]
 if hessian_infile != nothing
@@ -186,4 +195,3 @@ pmsf_file = opt["pmsf"]
 is_pmsf = (pmsf_file != nothing) ? true : false
 
 transform_method = opt["transform"]
-

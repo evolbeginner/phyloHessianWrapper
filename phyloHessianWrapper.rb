@@ -271,6 +271,7 @@ def show_help
       --blmin FLOAT             Minimum branch length (default: 4e-6)
       --hessian_type TYPE       Hessian calculation method (default: SKT2004)
       --fd_scheme TYPE          Finite difference method (central/forward, default: central)
+      --cache_mode TYPE         Transition-probability cache mode (diag/full, default: diag)
 
     MCMCTree Options:
       --run_mcmctree            Run MCMCtree after analysis
@@ -324,6 +325,7 @@ julia_bl_add_arg = nil
 
 hessian_type = 'STK2004'
 fd_scheme = 'central'
+cache_mode = 'diag'
 iqtree_indir = nil
 
 outdirs = Hash.new
@@ -350,6 +352,7 @@ opts = GetoptLong.new(
   ['--bsn', GetoptLong::REQUIRED_ARGUMENT],
   ['--hessian_type', GetoptLong::REQUIRED_ARGUMENT],
   ['--fd_scheme', GetoptLong::REQUIRED_ARGUMENT],
+  ['--cache_mode', GetoptLong::REQUIRED_ARGUMENT],
   ['--no_mwopt', GetoptLong::NO_ARGUMENT],
   ['--iqtree_indir', GetoptLong::REQUIRED_ARGUMENT],
   ['--phylo_prog', GetoptLong::REQUIRED_ARGUMENT],
@@ -401,6 +404,8 @@ opts.each do |opt, value|
       hessian_type = value
     when '--fd_scheme'
       fd_scheme = value
+    when '--cache_mode'
+      cache_mode = value
     when '--no_mwopt'
       is_mwopt = false
     when '--phylo_prog'
@@ -504,7 +509,7 @@ begin
   
   # julia_bl
   julia_iqtree_arg = is_dna_model ? "--iqtree #{outdirs[:iqtree]}/iqtree.iqtree" : ''
-  cmd = "#{JULIA} -t #{cpu} #{JULIA_BL} --basics_indir #{outdirs[:basics]} --st #{st} --tree #{out_treefile} -b #{branchout_matrix} -m #{non_mfm} --mfm #{mfm} --outdir #{outdirs[:inBV]} --force #{julia_bl_add_arg} #{julia_iqtree_arg} --hessian_type #{hessian_type} --fd_scheme #{fd_scheme} 2>#{outdir}/error"
+  cmd = "#{JULIA} -t #{cpu} #{JULIA_BL} --basics_indir #{outdirs[:basics]} --st #{st} --tree #{out_treefile} -b #{branchout_matrix} -m #{non_mfm} --mfm #{mfm} --outdir #{outdirs[:inBV]} --force #{julia_bl_add_arg} #{julia_iqtree_arg} --hessian_type #{hessian_type} --fd_scheme #{fd_scheme} --cache_mode #{cache_mode} 2>#{outdir}/error"
   execute_command(cmd, "Calculating Hessian. Takes long time ......")
 
   phylip = create_phylip(seqfile) if phylip.nil?

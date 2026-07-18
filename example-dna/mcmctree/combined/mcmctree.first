@@ -1,34 +1,0 @@
-2104921
-/mnt/hd1/home/sishuo/lab-tools/phyloHessian/example-dna/mcmctree/combined/disabled_bin/codeml
-MCMCTREE in paml version 4.10.7, June 2023
-
-Reading options from mcmctree.ctl..
-finetune is deprecated now.
-
-Reading main tree.
-(((t7, (t19, t11)), (t2, (t13, t18))), ((((t1, t12), t9), t5), (((t17, (t14, t10)), t6), ((t20, (t16, t8)), (t15, (t3, t4))))));
-   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
-   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
-   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0
-
-duplication dating:  0 node ages are mirrored
-
-Reading sequence data..  1 loci
-
-
-*** Locus 1 ***
-ns = 20  	ls = 300
-Reading sequences, sequential format..
-Reading seq # 1: t7       Reading seq # 2: t19       Reading seq # 3: t11       Reading seq # 4: t2       Reading seq # 5: t13       Reading seq # 6: t18       Reading seq # 7: t1       Reading seq # 8: t12       Reading seq # 9: t9       Reading seq #10: t5       Reading seq #11: t17       Reading seq #12: t14       Reading seq #13: t10       Reading seq #14: t6       Reading seq #15: t20       Reading seq #16: t16       Reading seq #17: t8       Reading seq #18: t15       Reading seq #19: t3       Reading seq #20: t4       
-Sequences read..
-Counting site patterns..  0:00
-Compressing,    300 patterns at    300 /    300 sites (100.0%),  0:01
-Collecting fpatt[] & pose[],    300 patterns at    300 /    300 sites (100.0%),  0:01
-Counting frequencies..
-300 patterns, clean
-
-
-
-*** Locus 1 ***
-running baseml tmp0001.ctl
-file rst2 not found!

@@ -1,3 +1,6 @@
+### v1.0.0 - 2026-07-18
+- **Fixed:** improved `Readme.md`
+
 ### v0.6.0 - 2026-07-09
 - **New features:** DNA subs models allowed by `--st DNA -m GTR`
 

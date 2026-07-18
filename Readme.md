@@ -103,43 +103,49 @@ mcmctree mcmctree.ctl
 
 ## More Examples
 
+### DNA: GTR+G ###
+```bash
+ruby phyloHessianWrapper.rb -s example-dna/sim/alignment/combined.fas -t example-dna/ref.tre -r example-dna/ref.tre -m GTR+G --st DNA --outdir example-dna/GTR+G2 --cpu 10 --force
+```
+compare with the output in `example-dna/GTR+G/` and 
+
 ### LG+C60+I+R with PMSF (recommended for large datasets; see Wang et al., 2018)
 
 You can enable PMSF in either of two equivalent ways:
 
 ```bash
 # Option 1: include +PMSF in the model string
-ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+C60+I+R+PMSF --outdir LG+C60+I+R+PMSF --force --cpu 10
+ruby phyloHessianWrapper.rb -s example/sim/alignment/combined.fas --reftree ref.tre -m LG+C60+I+R+PMSF --outdir example/LG+C60+I+R+PMSF --force --cpu 10
 ```
 
 ```bash
 # Option 2: use --pmsf flag
-ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+C60+I+R --pmsf --outdir LG+C60+I+R+PMSF --force --cpu 10
+ruby phyloHessianWrapper.rb -s example/sim/alignment/combined.fas --reftree ref.tre -m LG+C60+I+R --pmsf --outdir example/LG+C60+I+R+PMSF --force --cpu 10
 ```
 
 ### LG+C60+G without mixture-weight optimization
 
 ```bash
-ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+C60+G --outdir LG+C60+G-no_mwopt --force --cpu 10 --no_mwopt
+ruby phyloHessianWrapper.rb -s example/sim/alignment/combined.fas --reftree ref.tre -m LG+C60+G --outdir example/LG+C60+G-no_mwopt --force --cpu 10 --no_mwopt
 ```
 
 ### EX2+G with PhyML
 
 ```bash
-ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m EX2+G --outdir EX2+G --force --cpu 10 --phylo_prog phyml
+ruby phyloHessianWrapper.rb -s example/sim/alignment/combined.fas --reftree ref.tre -m EX2+G --outdir example/EX2+G --force --cpu 10 --phylo_prog phyml
 ```
 
 ### use UDM0004CLR (see [UDM profile-mixture models](https://github.com/dschrempf/edcluster))
 
 ```bash
-ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+UDM0004CLR+G --outdir LG+UDM0004CLR+G --force --cpu 1 --tree_add_cmd "-mdef substitution_model/merged_nexus/UDM_clr_iqtree_merged.nex"
+ruby phyloHessianWrapper.rb -s example/sim/alignment/combined.fas --reftree ref.tre -m LG+UDM0004CLR+G --outdir example/LG+UDM0004CLR+G --force --cpu 1 --tree_add_cmd "-mdef substitution_model/merged_nexus/UDM_clr_iqtree_merged.nex"
 ```
 
 ### LG+C60+G with forward finite diff method
 faster in case of fewer threads but maybe less accurate compared to the default central finite diff in calculating Hessian with the STK2004 method (OPS)
 
 ```bash
-ruby phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m LG+C60+G --outdir LG+C60+G_forward --force --cpu 10 --fd_scheme forward
+ruby phyloHessianWrapper.rb -s example/sim/alignment/combined.fas --reftree ref.tre -m LG+C60+G --outdir example/LG+C60+G_forward --force --cpu 10 --fd_scheme forward
 ```
 
 ---

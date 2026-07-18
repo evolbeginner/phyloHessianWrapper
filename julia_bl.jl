@@ -50,8 +50,9 @@ Base.@kwdef struct RunCtx
     # runtime options (captured once, no globals in hot code)
     hessian_outfile::Union{Nothing, String}
     hessian_type::String
-    hessian_infile::Union{Nothing, String}
+	hessian_infile::Union{Nothing, String}
 	fd_scheme::Symbol
+    cache_mode::Symbol
     is_compare::Bool
     transform_method
     treefile::String
@@ -451,7 +452,7 @@ function hessian_STK2004_fast(
     pattern2,
     ctx::RunCtx;
     cache_mode::Symbol = :diag,
-    fd_scheme::Symbol = :forward,   # :forward (default) or :central
+    fd_scheme::Symbol = :central,   # :forward (default) or :central
     step_scale::Float64 = 1e6
 )
     nb = ctx.nb
@@ -737,8 +738,7 @@ function main(ctx::RunCtx)
 
     println(now())
 
-    cache_mode = get(ENV, "BL_CACHE_MODE", "diag") == "full" ? :full : :diag
-	#cache_mode = :full
+    cache_mode = ctx.cache_mode
     println("cache_mode = ", cache_mode)
 	sum_phylo_log_lk2 = (x::Vector{Float64}) -> sum_phylo_log_lk_fast(ctx, x, pattern2; cache_mode=cache_mode)
 
@@ -841,6 +841,7 @@ function get_args_refactored()
         hessian_type = hessian_type,
         hessian_infile = hessian_infile,
 		fd_scheme = fd_scheme,
+        cache_mode = cache_mode,
         is_compare = is_compare,
         transform_method = transform_method,
         treefile = treefile,
