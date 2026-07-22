@@ -146,8 +146,10 @@ end
 # Caches for one fixed branch-length vector.
 # :diag cache stores exp(Lambda * b * r) per edge/state.
 # :full cache stores full P(t)=U*diag(exp(Lambda*t))*U_inv per edge.
-const PTDiagCache = Dict{Tuple{UInt64, Float64}, Matrix{Float64}}          # edge × state
-const PTFullCache = Dict{Tuple{UInt64, Float64}, Vector{Matrix{Float64}}}  # edge -> (state × state)
+ # Cache each edge independently.  This is important during finite differences:
+ # a perturbed branch must not invalidate P(t) for all of the other edges.
+const PTDiagCache = Dict{Tuple{UInt64, Float64, Int, Float64}, Vector{Float64}} # (q,rate,edge,bl) -> exp(lambda*t)
+const PTFullCache = Dict{Tuple{UInt64, Float64, Int, Float64}, Matrix{Float64}} # (q,rate,edge,bl) -> P(t)
 const PTAnyCache = Union{PTDiagCache, PTFullCache}
 
 @inline qid(q) = UInt(objectid(q.U))
@@ -170,69 +172,42 @@ const PTAnyCache = Union{PTDiagCache, PTFullCache}
     return out
 end
 
-function get_diagexp_cache!(
-    cache::PTDiagCache,
-    q,
-    bl::Vector{Float64},
-    r::Float64,
-    nl::Int
-)
-    key = (qid(q), canon_rate(r))
+function get_diagexp_cache!(cache::PTDiagCache, q, bl::Float64, r::Float64, edge::Int, nl::Int)
+    key = (qid(q), canon_rate(r), edge, bl)
     get!(cache, key) do
-        M = Matrix{Float64}(undef, length(bl), nl)  # edge × state
+        M = Vector{Float64}(undef, nl)
         Λ = q.Lambda
-        @inbounds for e in eachindex(bl)
-            t = bl[e] * r
-            for s in 1:nl
-                M[e, s] = exp(Λ[s] * t)
-            end
+        t = bl * r
+        @inbounds for s in 1:nl
+            M[s] = exp(Λ[s] * t)
         end
         M
     end
 end
 
-function get_fullpt_cache!(
-    cache::PTFullCache,
-    q,
-    bl::Vector{Float64},
-    r::Float64,
-    nl::Int
-)
-    key = (qid(q), canon_rate(r))
+function get_fullpt_cache!(cache::PTFullCache, q, bl::Float64, r::Float64, edge::Int, nl::Int)
+    key = (qid(q), canon_rate(r), edge, bl)
     get!(cache, key) do
         U = q.U
         U_inv = q.U_inv
         Λ = q.Lambda
 
-        nedge = length(bl)
-        Pvec = Vector{Matrix{Float64}}(undef, nedge)
-
-        # r == 0 => P = I for all edges
+        # r == 0 => P = I for this edge
         if r == 0.0
-            I_nl = Matrix{Float64}(I, nl, nl)
-            @inbounds for e in 1:nedge
-                Pvec[e] = I_nl
-            end
-            return Pvec
+            return Matrix{Float64}(I, nl, nl)
         end
 
         tmp = Matrix{Float64}(undef, nl, nl)  # row-scaled U_inv
-        @inbounds for e in 1:nedge
-            t = bl[e] * r
-
-            # tmp = Diagonal(exp(Λ*t)) * U_inv (scale rows)
-            for i in 1:nl
-                s = exp(Λ[i] * t)
-                @simd for j in 1:nl
-                    tmp[i, j] = U_inv[i, j] * s
-                end
+        t = bl * r
+        for i in 1:nl
+            s = exp(Λ[i] * t)
+            @simd for j in 1:nl
+                tmp[i, j] = U_inv[i, j] * s
             end
-
-            P = Matrix{Float64}(undef, nl, nl)
-            mul!(P, U, tmp)
-            Pvec[e] = P
         end
-        Pvec
+        P = Matrix{Float64}(undef, nl, nl)
+        mul!(P, U, tmp)
+        P
     end
 end
 
@@ -282,18 +257,6 @@ function do_phylo_log_lk(
 
         use_eig = (eltype(U) <: Float64 && eltype(Lambda) <: Float64 && eltype(U_inv) <: Float64)
 
-        diagexp = nothing
-        fullpt = nothing
-        if use_eig && pt_cache !== nothing
-            if cache_mode === :diag
-                diagexp = get_diagexp_cache!(pt_cache::PTDiagCache, q, bl, r, nl)
-            elseif cache_mode === :full
-                fullpt = get_fullpt_cache!(pt_cache::PTFullCache, q, bl, r, nl)
-            else
-                error("Unknown cache_mode=$(cache_mode). Use :diag or :full.")
-            end
-        end
-
         j = 0
         @inbounds for anc in (nb.tip + nb.node):-1:(1 + nb.tip)
             children = all_children[anc]
@@ -310,10 +273,11 @@ function do_phylo_log_lk(
                     t = bl[j] * r
                     childbuf .= exp(Q * t) * childlik
                 else
-                    if fullpt !== nothing
-                        mul!(childbuf, fullpt[j], childlik)
-                    elseif diagexp !== nothing
-                        eigendecom_pt_diag!(childbuf, tmp, U, U_inv, childlik, @view(diagexp[j, :]))
+                    if pt_cache !== nothing && cache_mode === :full
+                        mul!(childbuf, get_fullpt_cache!(pt_cache::PTFullCache, q, bl[j], r, j, nl), childlik)
+                    elseif pt_cache !== nothing && cache_mode === :diag
+                        eigendecom_pt_diag!(childbuf, tmp, U, U_inv, childlik,
+                                            get_diagexp_cache!(pt_cache::PTDiagCache, q, bl[j], r, j, nl))
                     else
                         t = bl[j] * r
                         eigendecom_pt!(childbuf, tmp, U, Lambda, U_inv, childlik, t)
@@ -488,18 +452,6 @@ function comp_loglk_block!(
 
     use_eig = (eltype(U) <: Float64 && eltype(Lambda) <: Float64 && eltype(U_inv) <: Float64)
 
-    diagexp = nothing
-    fullpt = nothing
-    if use_eig && pt_cache !== nothing
-        if cache_mode === :diag
-            diagexp = get_diagexp_cache!(pt_cache::PTDiagCache, q, bl, r, nl)
-        elseif cache_mode === :full
-            fullpt = get_fullpt_cache!(pt_cache::PTFullCache, q, bl, r, nl)
-        else
-            error("Unknown cache_mode=$(cache_mode). Use :diag or :full.")
-        end
-    end
-
     j = 0
     @inbounds for anc in (nb.tip + nb.node):-1:(1 + nb.tip)
         children = all_children[anc]
@@ -514,12 +466,13 @@ function comp_loglk_block!(
             elseif !use_eig
                 t = bl[j] * r
                 mul!(childbuf, exp(Q * t), childlik)
-            elseif fullpt !== nothing
-                mul!(childbuf, fullpt[j], childlik)
-            elseif diagexp !== nothing
+            elseif pt_cache !== nothing && cache_mode === :full
+                mul!(childbuf, get_fullpt_cache!(pt_cache::PTFullCache, q, bl[j], r, j, nl), childlik)
+            elseif pt_cache !== nothing && cache_mode === :diag
                 mul!(tmp, U_inv, childlik)
+                de = get_diagexp_cache!(pt_cache::PTDiagCache, q, bl[j], r, j, nl)
                 for p in 1:n_pat, s in 1:nl
-                    tmp[s, p] *= diagexp[j, s]
+                    tmp[s, p] *= de[s]
                 end
                 mul!(childbuf, U, tmp)
             else
@@ -578,7 +531,8 @@ function pattern_loglk_vec_matrix(
     ctx::RunCtx,
     bl::Vector{Float64},
     blocks::Vector{PatternBlock};
-    cache_mode::Symbol = :diag
+    cache_mode::Symbol = :diag,
+    caches = nothing
 )
     n_pat = isempty(blocks) ? 0 : last(blocks[end].indices)
     out = Vector{Float64}(undef, n_pat)
@@ -593,7 +547,7 @@ function pattern_loglk_vec_matrix(
     nq = length(qs)
 
     nslots = Threads.maxthreadid()
-    caches = [cache_mode === :full ? PTFullCache() : PTDiagCache() for _ in 1:nslots]
+    caches = caches === nothing ? [cache_mode === :full ? PTFullCache() : PTDiagCache() for _ in 1:nslots] : caches
 
     Threads.@threads for bi in eachindex(blocks)
         tid = Threads.threadid()
@@ -685,13 +639,174 @@ function pattern_loglk_vec_matrix(
     bl::Vector{Float64},
     pattern2;
     cache_mode::Symbol = :diag,
-    block_size::Int = 256
+    block_size::Int = 256,
+    caches = nothing
 )
     if ctx.is_pmsf
-        return pattern_loglk_vec(ctx, bl, pattern2; cache_mode=cache_mode)
+        return pattern_loglk_vec_batched(ctx, bl, pattern2; cache_mode=cache_mode, caches=caches)
     end
     return pattern_loglk_vec_matrix(ctx, bl, make_pattern_blocks(ctx, pattern2; block_size=block_size);
-                                    cache_mode=cache_mode)
+                                    cache_mode=cache_mode, caches=caches)
+end
+
+######################################################################
+# IQ-TREE-style directional partials for the STK score matrix.  For edge
+# parent--child, inside[:,child] describes the child side and outside[:,child]
+# describes everything on the parent side.  Changing that edge therefore only
+# requires outside' * P(t) * inside; no tree traversal is repeated.
+function edge_component_logliks!(
+    l0::Matrix{Float64}, lp::Matrix{Float64}, lm::Matrix{Float64},
+    ctx::RunCtx, q, bl::Vector{Float64}, block::PatternBlock, r::Float64,
+    logweight::Float64, steps::Vector{Float64}, cache::PTFullCache
+)
+    nb, nl = ctx.nb, ctx.nl
+    nn = nb.tip + nb.node
+    np = size(block.liks, 3)
+    children = ctx.all_children_vec
+
+    parent = zeros(Int, nn)
+    edge = zeros(Int, nn)
+    ej = 0
+    @inbounds for anc in nn:-1:(nb.tip + 1)
+        for c in children[anc]
+            ej += 1; parent[c] = anc; edge[c] = ej
+        end
+    end
+    ej == nb.branch || error("Tree traversal produced $ej edges, expected $(nb.branch)")
+
+    inside = copy(block.liks)
+    inscale = zeros(Float64, nn, np)
+    work = Matrix{Float64}(undef, nl, np)
+    prod = Matrix{Float64}(undef, nl, np)
+
+    # child -> parent messages
+    @inbounds for anc in nn:-1:(nb.tip + 1)
+        fill!(prod, 1.0)
+        scales = zeros(Float64, np)
+        for c in children[anc]
+            e = edge[c]
+            P = get_fullpt_cache!(cache, q, bl[e], r, e, nl)
+            mul!(work, P, @view(inside[:, c, :]))
+            prod .*= work
+            scales .+= @view(inscale[c, :])
+        end
+        for p in 1:np
+            z = max(sum(@view(prod[:, p])), 1e-300)
+            @views inside[:, anc, p] .= prod[:, p] ./ z
+            inscale[anc, p] = scales[p] + log(z)
+        end
+    end
+
+    # outside[:,node] is the complementary likelihood expressed at node's own
+    # state. edgeoutside[:,child] is expressed at parent(child)'s state and is
+    # therefore the left side of edgeoutside' * P * inside.
+    outside = zeros(Float64, nl, nn, np)
+    outscale = zeros(Float64, nn, np)
+    edgeoutside = similar(outside)
+    edgescale = similar(outscale)
+    root = nb.tip + 1
+    @inbounds for p in 1:np
+        outside[:, root, p] .= q.Pi
+    end
+
+    tmp = Matrix{Float64}(undef, nl, np)
+    @inbounds for anc in root:nn
+        ch = children[anc]
+        for focal in ch
+            prod .= @view(outside[:, anc, :])
+            scales = copy(@view(outscale[anc, :]))
+            for sib in ch
+                sib == focal && continue
+                e2 = edge[sib]
+                P2 = get_fullpt_cache!(cache, q, bl[e2], r, e2, nl)
+                mul!(tmp, P2, @view(inside[:, sib, :]))
+                prod .*= tmp
+                scales .+= @view(inscale[sib, :])
+            end
+            for p in 1:np
+                z = max(sum(@view(prod[:, p])), 1e-300)
+                @views edgeoutside[:, focal, p] .= prod[:, p] ./ z
+                edgescale[focal, p] = scales[p] + log(z)
+            end
+            # Move the complementary likelihood across anc--focal so it can
+            # seed the next preorder level in focal's state space.
+            Pf = get_fullpt_cache!(cache, q, bl[edge[focal]], r, edge[focal], nl)
+            mul!(tmp, transpose(Pf), @view(edgeoutside[:, focal, :]))
+            for p in 1:np
+                z = max(sum(@view(tmp[:, p])), 1e-300)
+                @views outside[:, focal, p] .= tmp[:, p] ./ z
+                outscale[focal, p] = edgescale[focal, p] + log(z)
+            end
+        end
+    end
+
+    # Three contractions per edge. All non-focal messages stay unchanged.
+    @inbounds for child in 1:nn
+        e = edge[child]
+        e == 0 && continue
+        P0 = get_fullpt_cache!(cache, q, bl[e], r, e, nl)
+        Pp = get_fullpt_cache!(cache, q, bl[e] + steps[e], r, e, nl)
+        Pm = get_fullpt_cache!(cache, q, bl[e] - steps[e], r, e, nl)
+        for (dest, P) in ((l0, P0), (lp, Pp), (lm, Pm))
+            mul!(work, P, @view(inside[:, child, :]))
+            for p in 1:np
+                v = max(dot(@view(edgeoutside[:, child, p]), @view(work[:, p])), 1e-300)
+                x = logweight + edgescale[child, p] + inscale[child, p] + log(v)
+                dest[p, e] = logaddexp2(dest[p, e], x)
+            end
+        end
+    end
+    return nothing
+end
+
+function directional_score_matrix(bl::Vector{Float64}, pattern2, ctx::RunCtx,
+                                  blocks::Vector{PatternBlock}; step_scale::Float64=1e6)
+    npat, ne = length(pattern2), ctx.nb.branch
+    steps = (1 .+ bl) ./ step_scale
+    L0 = fill(-Inf, npat, ne); Lp = similar(L0); Lm = similar(L0)
+    fill!(Lp, -Inf); fill!(Lm, -Inf)
+    props = ctx.props ./ sum(ctx.props)
+    qs = ctx.q_pis isa AbstractVector ? ctx.q_pis : (ctx.q_pis,)
+    nq = length(qs)
+    is_lg4 = ctx.sub_model == "LG4M" || ctx.sub_model == "LG4X"
+    cache = PTFullCache()
+
+    for block in blocks
+        rows = block.indices
+        a0 = fill(-Inf, length(rows), ne); ap = similar(a0); am = similar(a0)
+        fill!(ap, -Inf); fill!(am, -Inf)
+        if is_lg4
+            wk = length(props) == nq ? props : (length(ctx.freqs) == nq ? ctx.freqs ./ sum(ctx.freqs) : fill(1/nq, nq))
+            for k in 1:nq
+                r = (length(ctx.Qrs) == nq ? ctx.Qrs[k] : 1.0) * ctx.rs[min(k, length(ctx.rs))]
+                wt = wk[k] * (ctx.inv_info[:is_do_inv] ? 1-ctx.inv_info[:inv_prop] : 1.0)
+                edge_component_logliks!(a0, ap, am, ctx, qs[k], bl, block, r, log(max(wt,1e-300)), steps, cache)
+            end
+        else
+            for ri in eachindex(ctx.rs), qi in 1:nq
+                r = (length(ctx.Qrs) == nq ? ctx.Qrs[qi] : 1.0) * ctx.rs[ri]
+                wt = props[ri] * ctx.freqs[qi] * (ctx.inv_info[:is_do_inv] ? 1-ctx.inv_info[:inv_prop] : 1.0)
+                edge_component_logliks!(a0, ap, am, ctx, qs[qi], bl, block, r, log(max(wt,1e-300)), steps, cache)
+            end
+        end
+        # Invariable components have r=0, hence exactly the same value at +/-.
+        if ctx.inv_info[:is_do_inv] && any(block.invmask)
+            for qi in 1:nq
+                iw = is_lg4 ? (length(props) == nq ? props[qi] : (length(ctx.freqs) == nq ? ctx.freqs[qi]/sum(ctx.freqs) : 1/nq)) : ctx.freqs[min(qi,end)]
+                wt = ctx.inv_info[:inv_prop] * iw
+                inv0 = fill(-Inf, length(rows), ne); invp=similar(inv0); invm=similar(inv0)
+                fill!(invp,-Inf); fill!(invm,-Inf)
+                edge_component_logliks!(inv0, invp, invm, ctx, qs[qi], bl, block, 0.0, log(max(wt,1e-300)), steps, cache)
+                for p in eachindex(block.invmask), e in 1:ne
+                    block.invmask[p] || continue
+                    a0[p,e]=logaddexp2(a0[p,e],inv0[p,e]); ap[p,e]=logaddexp2(ap[p,e],invp[p,e]); am[p,e]=logaddexp2(am[p,e],invm[p,e])
+                end
+            end
+        end
+        L0[rows,:] .= a0; Lp[rows,:] .= ap; Lm[rows,:] .= am
+    end
+    D = (Lp .- Lm) ./ reshape(2 .* steps, 1, :)
+    return D, vec(L0[:,1])
 end
 
 ######################################################################
@@ -729,9 +844,21 @@ function hessian_STK2004_fast(
     nb = ctx.nb
     n_pat = length(pattern2)
     w = Float64[p[2] for p in pattern2]
+
+    # Non-PMSF models share Q across patterns, so directional partials can
+    # evaluate every focal edge without re-pruning the tree.
+    if pattern_blocks !== nothing && !ctx.is_pmsf && fd_scheme === :central
+        D, l0 = directional_score_matrix(bls, pattern2, ctx, pattern_blocks; step_scale=step_scale)
+        g = vec(transpose(D) * w)
+        Dw = D .* reshape(w, :, 1)
+        h = -(transpose(D) * Dw)
+        return (h, g, dot(w, l0), l0)
+    end
+
+    shared_caches = [cache_mode === :full ? PTFullCache() : PTDiagCache() for _ in 1:Threads.maxthreadid()]
     loglk_vec = pattern_blocks === nothing ?
-        ((x) -> pattern_loglk_vec_matrix(ctx, x, pattern2; cache_mode=cache_mode)) :
-        ((x) -> pattern_loglk_vec_matrix(ctx, x, pattern_blocks; cache_mode=cache_mode))
+        ((x) -> pattern_loglk_vec_matrix(ctx, x, pattern2; cache_mode=cache_mode, caches=shared_caches)) :
+        ((x) -> pattern_loglk_vec_matrix(ctx, x, pattern_blocks; cache_mode=cache_mode, caches=shared_caches))
 
     # baseline per-pattern lnL (unweighted)
     l0 = loglk_vec(bls)
@@ -739,7 +866,7 @@ function hessian_STK2004_fast(
     # D[k,i] = d lnL_k / d b_i  (unweighted per pattern)
     D = Matrix{Float64}(undef, n_pat, nb.branch)
 
-    Threads.@threads for i in 1:nb.branch
+    for i in 1:nb.branch
         step = (1 + bls[i]) / step_scale
 
         if fd_scheme === :forward
@@ -825,31 +952,43 @@ end
     [bl_order["ape2mcmctree"][k] for k in sorted_keys]
 end
 
-function pattern_loglk_vec(
+function pattern_loglk_vec_batched(
     ctx::RunCtx,
     bl::Vector{Float64},
     pattern2;
-    cache_mode::Symbol = :diag
+    cache_mode::Symbol = :diag,
+    caches = nothing
 )
     n_pat = length(pattern2)
     out = Vector{Float64}(undef, n_pat)
-
     nslots = Threads.maxthreadid()
-    caches = [cache_mode === :full ? PTFullCache() : PTDiagCache() for _ in 1:nslots]
+    caches = caches === nothing ? [cache_mode === :full ? PTFullCache() : PTDiagCache() for _ in 1:nslots] : caches
 
-    Threads.@threads for i in 1:n_pat
+    # Schedule contiguous blocks.  This keeps each worker on a compact range of
+    # patterns and, importantly, retains one transition cache for the whole
+    # block instead of rebuilding a cache per pattern/evaluation.
+    block_size = max(1, min(256, cld(n_pat, max(1, 4 * nslots))))
+    ranges = UnitRange{Int}[]
+    first_i = 1
+    while first_i <= n_pat
+        last_i = min(n_pat, first_i + block_size - 1)
+        push!(ranges, first_i:last_i)
+        first_i = last_i + 1
+    end
+
+    Threads.@threads for ri in eachindex(ranges)
         tid = Threads.threadid()
-        site_pat = pattern2[i][1]
-        q = choose_q(ctx, i)
-        out[i] = do_phylo_log_lk(
-            ctx, q, bl, site_pat;
-            index = i,
-            pt_cache = caches[tid],
-            cache_mode = cache_mode
-        )
-	    end
-	    return out
-	end
+        cache = caches[tid]
+        for i in ranges[ri]
+            site_pat = pattern2[i][1]
+            q = choose_q(ctx, i)
+            out[i] = do_phylo_log_lk(ctx, q, bl, site_pat;
+                                     index=i, pt_cache=cache,
+                                     cache_mode=cache_mode)
+        end
+    end
+    return out
+end
 
 function sum_phylo_log_lk_fast(
     ctx::RunCtx,
@@ -1018,7 +1157,7 @@ function main(ctx::RunCtx)
 
     cache_mode = ctx.cache_mode
     println("cache_mode = ", cache_mode)
-	sum_phylo_log_lk2 = (x::Vector{Float64}) -> sum_phylo_log_lk_fast(ctx, x, pattern2;
+    sum_phylo_log_lk2 = (x::Vector{Float64}) -> sum_phylo_log_lk_fast(ctx, x, pattern2;
         cache_mode=cache_mode, pattern_blocks=pattern_blocks)
 
     lnL0 = sum_phylo_log_lk2(bls)
@@ -1032,12 +1171,12 @@ function main(ctx::RunCtx)
         lnL_for_compare = lnL0
         if occursin(r"^(finite_difference|fd|2nd_order|2nd_order_derivative|2nd)$", ctx.hessian_type)
             h = hessian_fd(bls, sum_phylo_log_lk2, nb.branch)
-			_, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx;
+            _, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx;
                 cache_mode=cache_mode, fd_scheme=ctx.fd_scheme, pattern_blocks=pattern_blocks)
             g = g_stk
             # g = calculate_gradient(bls, sum_phylo_log_lk2)
         else
-			h, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx;
+            h, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx;
                 cache_mode=cache_mode, fd_scheme=ctx.fd_scheme, pattern_blocks=pattern_blocks)
             g = g_stk
             lnL_for_compare = lnL0_stk
@@ -1139,3 +1278,4 @@ if abspath(PROGRAM_FILE) == @__FILE__
     ctx = get_args_refactored()
     main(ctx)
 end
+
