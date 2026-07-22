@@ -145,7 +145,33 @@ iqtree_file = opt["iqtree"]
 phyml_file = opt["phyml"]
 branchout_matrix = opt["branchout_matrix"]
 bs_branchout_matrix = opt["bs_branchout_matrix"]
-sub_model = opt["model"]
+model_spec = opt["model"]
+
+# Accept either the wrapper's split form (`-m LG --mfm C10`) or a complete
+# IQ-TREE model (`-m LG+C10+F`).  Rate/frequency modifiers are read from the
+# IQ-TREE report; only matrix/profile names are needed to construct Q here.
+function split_julia_model_spec(model::String, explicit_mfm)
+	base = nothing
+	profile = explicit_mfm
+	for token in split(model, '+')
+		isempty(token) && continue
+		upper = uppercase(token)
+		if occursin(r"^(G\d*|R\d*|I|F|FO|FU|FQ)(\{.*\})?$", upper)
+			continue
+		end
+		regular = any(isfile(joinpath(@__DIR__, "../substitution_model/regular", token * suffix)) for suffix in (".dat", ".nex"))
+		mfm = any(isfile(joinpath(@__DIR__, "../substitution_model/mfm", token * suffix)) for suffix in (".dat", ".nex"))
+		if regular
+			base === nothing || error("More than one substitution matrix in model $model")
+			base = token
+		elseif mfm
+			(profile === nothing || profile == "nothing") || error("More than one profile mixture in model $model")
+			profile = token
+		end
+	end
+	base === nothing && (base = split(model, '+')[1])
+	return base, profile
+end
 
 outdir = opt["outdir"]
 is_force = opt["force"]
@@ -190,6 +216,7 @@ end
 
 mix_freq_model = opt["mix_freq_model"]
 mix_freq_model = (mix_freq_model == "nothing") ? nothing : mix_freq_model
+sub_model, mix_freq_model = split_julia_model_spec(model_spec, mix_freq_model)
 
 pmsf_file = opt["pmsf"]
 is_pmsf = (pmsf_file != nothing) ? true : false

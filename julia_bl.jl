@@ -152,6 +152,7 @@ const PTAnyCache = Union{PTDiagCache, PTFullCache}
 
 @inline qid(q) = UInt(objectid(q.U))
 @inline canon_rate(r::Float64) = (r == 0.0 ? 0.0 : r)
+@inline logaddexp2(a::Float64, b::Float64) = a == -Inf ? b : (b == -Inf ? a : max(a, b) + log1p(exp(-abs(a - b))))
 
 @inline function eigendecom_pt_diag!(
     out::AbstractVector{Float64},
@@ -424,6 +425,275 @@ function get_liks_pattern(pattern, nl::Int, nb::Nb)
     return out
 end
 
+struct PatternBlock
+    liks::Array{Float64, 3}      # state × node × pattern
+    invmask::BitVector
+    indices::UnitRange{Int}
+end
+
+function make_pattern_block(pattern2, nl::Int, nb::Nb, indices::UnitRange{Int}, is_do_inv::Bool)
+    n = length(indices)
+    liks = zeros(Float64, nl, nb.tip + nb.node, n)
+    invmask = falses(n)
+
+    @inbounds for (dst, src) in enumerate(indices)
+        site_liks = pattern2[src][1]
+        for t in 1:nb.tip, s in 1:nl
+            liks[s, t, dst] = site_liks[s, t]
+        end
+        invmask[dst] = is_do_inv ? is_invariant_site_from_liks(site_liks, nb) : false
+    end
+
+    return PatternBlock(liks, invmask, indices)
+end
+
+function make_pattern_blocks(ctx::RunCtx, pattern2; block_size::Int=256)
+    n_pat = length(pattern2)
+    blocks = PatternBlock[]
+    first_i = 1
+    while first_i <= n_pat
+        last_i = min(n_pat, first_i + block_size - 1)
+        push!(blocks, make_pattern_block(pattern2, ctx.nl, ctx.nb, first_i:last_i, ctx.inv_info[:is_do_inv]))
+        first_i = last_i + 1
+    end
+    return blocks
+end
+
+function comp_loglk_block!(
+    out::Vector{Float64},
+    ctx::RunCtx,
+    q,
+    bl::Vector{Float64},
+    block::PatternBlock,
+    r::Float64,
+    pt_cache::Union{Nothing, PTAnyCache},
+    cache_mode::Symbol
+)
+    nb = ctx.nb
+    nl = ctx.nl
+    all_children = ctx.all_children_vec
+    n_pat = size(block.liks, 3)
+
+    Q = q.Q
+    Pi = q.Pi
+    U = q.U
+    Lambda = q.Lambda
+    U_inv = q.U_inv
+
+    liks = copy(block.liks)
+    comp = zeros(Float64, nb.tip + nb.node, n_pat)
+    childbuf = Matrix{Float64}(undef, nl, n_pat)
+    tmp = Matrix{Float64}(undef, nl, n_pat)
+    m_prod = ones(Float64, nl, n_pat)
+
+    use_eig = (eltype(U) <: Float64 && eltype(Lambda) <: Float64 && eltype(U_inv) <: Float64)
+
+    diagexp = nothing
+    fullpt = nothing
+    if use_eig && pt_cache !== nothing
+        if cache_mode === :diag
+            diagexp = get_diagexp_cache!(pt_cache::PTDiagCache, q, bl, r, nl)
+        elseif cache_mode === :full
+            fullpt = get_fullpt_cache!(pt_cache::PTFullCache, q, bl, r, nl)
+        else
+            error("Unknown cache_mode=$(cache_mode). Use :diag or :full.")
+        end
+    end
+
+    j = 0
+    @inbounds for anc in (nb.tip + nb.node):-1:(1 + nb.tip)
+        children = all_children[anc]
+        fill!(m_prod, 1.0)
+
+        for c in children
+            j += 1
+            childlik = @view liks[:, c, :]
+
+            if r == 0.0
+                copyto!(childbuf, childlik)
+            elseif !use_eig
+                t = bl[j] * r
+                mul!(childbuf, exp(Q * t), childlik)
+            elseif fullpt !== nothing
+                mul!(childbuf, fullpt[j], childlik)
+            elseif diagexp !== nothing
+                mul!(tmp, U_inv, childlik)
+                for p in 1:n_pat, s in 1:nl
+                    tmp[s, p] *= diagexp[j, s]
+                end
+                mul!(childbuf, U, tmp)
+            else
+                t = bl[j] * r
+                mul!(tmp, U_inv, childlik)
+                for p in 1:n_pat, s in 1:nl
+                    tmp[s, p] *= exp(Lambda[s] * t)
+                end
+                mul!(childbuf, U, tmp)
+            end
+
+            @simd for idx in eachindex(m_prod, childbuf)
+                m_prod[idx] *= childbuf[idx]
+            end
+        end
+
+        if anc == (1 + nb.tip)
+            for p in 1:n_pat
+                v = 0.0
+                for s in 1:nl
+                    v += Pi[s] * m_prod[s, p]
+                end
+                comp[anc, p] = v
+            end
+        else
+            for p in 1:n_pat
+                v = 0.0
+                for s in 1:nl
+                    v += m_prod[s, p]
+                end
+                comp[anc, p] = v
+            end
+        end
+
+        for p in 1:n_pat
+            invc = 1.0 / max(comp[anc, p], 1e-300)
+            for s in 1:nl
+                liks[s, anc, p] = m_prod[s, p] * invc
+            end
+        end
+    end
+
+    fill!(out, 0.0)
+    @inbounds for p in 1:n_pat
+        lk = 0.0
+        for anc in (nb.tip + 1):(nb.tip + nb.node)
+            lk += log(max(comp[anc, p], 1e-300))
+        end
+        out[p] = lk
+    end
+
+    return out
+end
+
+function pattern_loglk_vec_matrix(
+    ctx::RunCtx,
+    bl::Vector{Float64},
+    blocks::Vector{PatternBlock};
+    cache_mode::Symbol = :diag
+)
+    n_pat = isempty(blocks) ? 0 : last(blocks[end].indices)
+    out = Vector{Float64}(undef, n_pat)
+    rs = ctx.rs
+    props_norm = ctx.props ./ sum(ctx.props)
+    freqs = ctx.freqs
+    Qrs = ctx.Qrs
+    is_do_inv = ctx.inv_info[:is_do_inv]
+    inv_prop = ctx.inv_info[:inv_prop]
+    is_lg4 = (ctx.sub_model == "LG4M" || ctx.sub_model == "LG4X")
+    qs = ctx.q_pis isa AbstractVector ? ctx.q_pis : (ctx.q_pis,)
+    nq = length(qs)
+
+    nslots = Threads.maxthreadid()
+    caches = [cache_mode === :full ? PTFullCache() : PTDiagCache() for _ in 1:nslots]
+
+    Threads.@threads for bi in eachindex(blocks)
+        tid = Threads.threadid()
+        cache = caches[tid]
+        block = blocks[bi]
+        n_block = length(block.indices)
+        lks_var = fill(-Inf, n_block)
+        lks_inv = fill(-Inf, n_block)
+        comp = Vector{Float64}(undef, n_block)
+
+        if is_lg4
+            wk = length(props_norm) == nq ? props_norm :
+                 (length(freqs) == nq ? freqs ./ sum(freqs) : fill(1.0 / nq, nq))
+
+            for k in 1:nq
+                rk = rs[min(k, length(rs))]
+                qscale = length(Qrs) == nq ? Qrs[k] : 1.0
+                comp_loglk_block!(comp, ctx, qs[k], bl, block, qscale * rk, cache, cache_mode)
+                logw = log(max(wk[k], 1e-300))
+                @inbounds for p in 1:n_block
+                    lks_var[p] = logaddexp2(lks_var[p], logw + comp[p])
+                end
+            end
+
+            if is_do_inv && any(block.invmask)
+                for k in 1:nq
+                    comp_loglk_block!(comp, ctx, qs[k], bl, block, 0.0, cache, cache_mode)
+                    logw = log(max(wk[k], 1e-300))
+                    @inbounds for p in 1:n_block
+                        if block.invmask[p]
+                            lks_inv[p] = logaddexp2(lks_inv[p], logw + comp[p])
+                        end
+                    end
+                end
+            end
+
+            @inbounds for p in 1:n_block
+                if is_do_inv
+                    if block.invmask[p]
+                        out[block.indices[p]] = logaddexp2(
+                            log(max(inv_prop, 1e-300)) + lks_inv[p],
+                            log(max(1.0 - inv_prop, 1e-300)) + lks_var[p]
+                        )
+                    else
+                        out[block.indices[p]] = log(max(1.0 - inv_prop, 1e-300)) + lks_var[p]
+                    end
+                else
+                    out[block.indices[p]] = lks_var[p]
+                end
+            end
+        else
+            if is_do_inv && any(block.invmask)
+                for q_i in 1:nq
+                    q = qs[q_i]
+                    qscale = length(Qrs) == nq ? Qrs[q_i] : 1.0
+                    comp_loglk_block!(comp, ctx, q, bl, block, 0.0, cache, cache_mode)
+                    logw = log(max(inv_prop * freqs[q_i], 1e-300))
+                    @inbounds for p in 1:n_block
+                        if block.invmask[p]
+                            lks_inv[p] = logaddexp2(lks_inv[p], logw + comp[p])
+                        end
+                    end
+                end
+            end
+
+            for r_i in eachindex(rs), q_i in 1:nq
+                q = qs[q_i]
+                r = (length(Qrs) == nq ? Qrs[q_i] : 1.0) * rs[r_i]
+                comp_loglk_block!(comp, ctx, q, bl, block, r, cache, cache_mode)
+                logw = log(max(props_norm[r_i] * freqs[q_i] * (is_do_inv ? 1.0 - inv_prop : 1.0), 1e-300))
+                @inbounds for p in 1:n_block
+                    lks_var[p] = logaddexp2(lks_var[p], logw + comp[p])
+                end
+            end
+
+            @inbounds for p in 1:n_block
+                out[block.indices[p]] = (is_do_inv && block.invmask[p]) ?
+                    logaddexp2(lks_inv[p], lks_var[p]) :
+                    lks_var[p]
+            end
+        end
+    end
+
+    return out
+end
+
+function pattern_loglk_vec_matrix(
+    ctx::RunCtx,
+    bl::Vector{Float64},
+    pattern2;
+    cache_mode::Symbol = :diag,
+    block_size::Int = 256
+)
+    if ctx.is_pmsf
+        return pattern_loglk_vec(ctx, bl, pattern2; cache_mode=cache_mode)
+    end
+    return pattern_loglk_vec_matrix(ctx, bl, make_pattern_blocks(ctx, pattern2; block_size=block_size);
+                                    cache_mode=cache_mode)
+end
+
 ######################################################################
 function delta_log_lk!(
     bls_work::Vector{Float64},
@@ -453,14 +723,18 @@ function hessian_STK2004_fast(
     ctx::RunCtx;
     cache_mode::Symbol = :diag,
     fd_scheme::Symbol = :central,   # :forward (default) or :central
-    step_scale::Float64 = 1e6
+    step_scale::Float64 = 1e6,
+    pattern_blocks::Union{Nothing, Vector{PatternBlock}} = nothing
 )
     nb = ctx.nb
     n_pat = length(pattern2)
     w = Float64[p[2] for p in pattern2]
+    loglk_vec = pattern_blocks === nothing ?
+        ((x) -> pattern_loglk_vec_matrix(ctx, x, pattern2; cache_mode=cache_mode)) :
+        ((x) -> pattern_loglk_vec_matrix(ctx, x, pattern_blocks; cache_mode=cache_mode))
 
     # baseline per-pattern lnL (unweighted)
-    l0 = pattern_loglk_vec(ctx, bls, pattern2; cache_mode=cache_mode)
+    l0 = loglk_vec(bls)
 
     # D[k,i] = d lnL_k / d b_i  (unweighted per pattern)
     D = Matrix{Float64}(undef, n_pat, nb.branch)
@@ -470,7 +744,7 @@ function hessian_STK2004_fast(
 
         if fd_scheme === :forward
             blp = copy(bls); blp[i] += step
-            fp = pattern_loglk_vec(ctx, blp, pattern2; cache_mode=cache_mode)
+            fp = loglk_vec(blp)
 
             @inbounds @simd for k in 1:n_pat
                 D[k, i] = (fp[k] - l0[k]) / step
@@ -480,8 +754,8 @@ function hessian_STK2004_fast(
             blp = copy(bls); blp[i] += step
             blm = copy(bls); blm[i] -= step
 
-            fp = pattern_loglk_vec(ctx, blp, pattern2; cache_mode=cache_mode)
-            fm = pattern_loglk_vec(ctx, blm, pattern2; cache_mode=cache_mode)
+            fp = loglk_vec(blp)
+            fm = loglk_vec(blm)
 
             @inbounds @simd for k in 1:n_pat
                 D[k, i] = (fp[k] - fm[k]) / (2 * step)
@@ -581,9 +855,12 @@ function sum_phylo_log_lk_fast(
     ctx::RunCtx,
     bl::Vector{Float64},
     pattern2;
-    cache_mode::Symbol = :diag
+    cache_mode::Symbol = :diag,
+    pattern_blocks::Union{Nothing, Vector{PatternBlock}} = nothing
 )
-    lks = pattern_loglk_vec(ctx, bl, pattern2; cache_mode=cache_mode)
+    lks = pattern_blocks === nothing ?
+        pattern_loglk_vec_matrix(ctx, bl, pattern2; cache_mode=cache_mode) :
+        pattern_loglk_vec_matrix(ctx, bl, pattern_blocks; cache_mode=cache_mode)
     w = Float64[p[2] for p in pattern2]
     return dot(w, lks)
 end
@@ -726,6 +1003,7 @@ end
 function main(ctx::RunCtx)
     nb = ctx.nb
     pattern2 = get_liks_pattern(ctx.pattern, ctx.nl, nb)
+    pattern_blocks = ctx.is_pmsf ? nothing : make_pattern_blocks(ctx, pattern2)
 
     bls_vec = Vector{Vector{Float64}}()
     bls = read_bls_from_branchout_matrix(ctx.branchout_matrix)[1]
@@ -740,7 +1018,8 @@ function main(ctx::RunCtx)
 
     cache_mode = ctx.cache_mode
     println("cache_mode = ", cache_mode)
-	sum_phylo_log_lk2 = (x::Vector{Float64}) -> sum_phylo_log_lk_fast(ctx, x, pattern2; cache_mode=cache_mode)
+	sum_phylo_log_lk2 = (x::Vector{Float64}) -> sum_phylo_log_lk_fast(ctx, x, pattern2;
+        cache_mode=cache_mode, pattern_blocks=pattern_blocks)
 
     lnL0 = sum_phylo_log_lk2(bls)
     println("Starting Hessian and gradient calculation.")
@@ -753,11 +1032,13 @@ function main(ctx::RunCtx)
         lnL_for_compare = lnL0
         if occursin(r"^(finite_difference|fd|2nd_order|2nd_order_derivative|2nd)$", ctx.hessian_type)
             h = hessian_fd(bls, sum_phylo_log_lk2, nb.branch)
-			_, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx; cache_mode=cache_mode, fd_scheme=ctx.fd_scheme)
+			_, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx;
+                cache_mode=cache_mode, fd_scheme=ctx.fd_scheme, pattern_blocks=pattern_blocks)
             g = g_stk
             # g = calculate_gradient(bls, sum_phylo_log_lk2)
         else
-			h, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx; cache_mode=cache_mode, fd_scheme=ctx.fd_scheme)
+			h, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx;
+                cache_mode=cache_mode, fd_scheme=ctx.fd_scheme, pattern_blocks=pattern_blocks)
             g = g_stk
             lnL_for_compare = lnL0_stk
         end

@@ -1,1 +1,4 @@
 codex -a never -s danger-full-access resume 019f02b9-d6af-74e3-a2c3-0898709c1788
+
+# re-calc of lik per branch
+codex -a never -s danger-full-access resume 019f8430-b49f-7613-83dc-7e33e40dcb77

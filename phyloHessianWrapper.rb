@@ -481,7 +481,9 @@ begin
     end
     case phylo_prog
       when :iqtree
-        run_iqtree(st, treefile, non_mfm, pmsf, seqfile, outdirs[:iqtree], blmin, iqtree_add_arg0, iqtree_add_arg, cpu)
+        # IQ-TREE must receive the complete model string.  non_mfm/mfm are
+        # only the split representation used by the Julia likelihood code.
+        run_iqtree(st, treefile, model, pmsf, seqfile, outdirs[:iqtree], blmin, iqtree_add_arg0, iqtree_add_arg, cpu)
         out_treefile = File.join(outdirs[:iqtree], 'iqtree.treefile')
       when :phyml
         if is_dna_model

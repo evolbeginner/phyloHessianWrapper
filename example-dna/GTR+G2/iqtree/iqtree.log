@@ -5,18 +5,18 @@ Olga Chernomor, Michael Woodhams, Diep Thi Hoang, Heiko Schmidt
 
 Host:    mic-r750 (AVX512, FMA3, 1007 GB RAM)
 Command: iqtree -te example-dna/GTR+G2/iqtree/iqtree.treefile -m GTR+G -s example-dna/sim/alignment/combined.fas -pre example-dna/GTR+G2/iqtree/iqtree -redo -wsl -quiet -mwopt -keep-ident -blmin 4.0e-06 -T 10
-Seed:    894643 (Using SPRNG - Scalable Parallel Random Number Generator)
-Time:    Sat Jul 18 08:17:30 2026
+Seed:    225750 (Using SPRNG - Scalable Parallel Random Number Generator)
+Time:    Wed Jul 22 17:04:49 2026
 Kernel:  AVX+FMA - 10 threads (128 CPU cores detected)
 
 Reading alignment file example-dna/sim/alignment/combined.fas ... Fasta format detected
-Reading fasta file: done in 0.00011072 secs using 32.51% CPU
+Reading fasta file: done in 0.000104074 secs
 Alignment most likely contains DNA/RNA sequences
-Constructing alignment: done in 0.000325657 secs using 1655% CPU
+Constructing alignment: done in 0.000307586 secs
 Alignment has 20 sequences with 300 columns, 300 distinct patterns
 291 parsimony-informative, 8 singleton sites, 1 constant sites
      Gap/Ambiguity  Composition  p-value
-Analyzing sequences: done in 1.42166e-05 secs using 70.34% CPU
+Analyzing sequences: done in 1.28802e-05 secs
    1  t7     0.00%    passed     30.77%
    2  t19    0.00%    passed     84.33%
    3  t11    0.00%    passed     58.78%
@@ -51,7 +51,7 @@ Optimal log-likelihood: -5489.947
 Rate parameters:  A-C: 1.00932  A-G: 1.02708  A-T: 1.20400  C-G: 1.00698  C-T: 0.99731  G-T: 1.00000
 Base frequencies:  A: 0.322  C: 0.290  G: 0.159  T: 0.229
 Gamma shape alpha: 998.258
-Parameters optimization took 4 rounds (0.031 sec)
+Parameters optimization took 4 rounds (0.029 sec)
 Wrote distance file to... 
 BEST SCORE FOUND : -5489.947
 Site log-likelihoods printed to example-dna/GTR+G2/iqtree/iqtree.sitelh
@@ -60,8 +60,8 @@ Total tree length: 6.502
 Total number of iterations: 0
 CPU time used for tree search: 0.000 sec (0h:0m:0s)
 Wall-clock time used for tree search: 0.000 sec (0h:0m:0s)
-Total CPU time used: 0.377 sec (0h:0m:0s)
-Total wall-clock time used: 0.039 sec (0h:0m:0s)
+Total CPU time used: 0.356 sec (0h:0m:0s)
+Total wall-clock time used: 0.037 sec (0h:0m:0s)
 
 Analysis results written to: 
   IQ-TREE report:                example-dna/GTR+G2/iqtree/iqtree.iqtree
@@ -69,4 +69,4 @@ Analysis results written to:
   Site log-likelihoods:          example-dna/GTR+G2/iqtree/iqtree.sitelh
   Screen log file:               example-dna/GTR+G2/iqtree/iqtree.log
 
-Date and Time: Sat Jul 18 08:17:30 2026
+Date and Time: Wed Jul 22 17:04:49 2026
