@@ -1,5 +1,9 @@
+### v1.2.0 - 2026-08-21
+- **New features:** `--hessian_type Yang2000` added to enable the use of analytical 1st derivative calculation
+
 ### v1.1.1 - 2026-08-21
 - **Improved:** `parse_tree_seq.R` code cleaned and 3 pkgs no need to load
+- **New features:** 
 
 ### v1.1.0 - 2026-07-22
 - **Improved:** speed-up of `julia_bl.jl` by memorizing P(t) for subtrees during Felsenstein's pruning algo phylo lik calc

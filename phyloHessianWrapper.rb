@@ -269,8 +269,8 @@ def show_help
 
     Branch Length Options:
       --blmin FLOAT             Minimum branch length (default: 4e-6)
-      --hessian_type TYPE       Hessian calculation method (default: SKT2004)
-      --fd_scheme TYPE          Finite difference method (central/forward, default: central)
+      --hessian_type TYPE       STK2004 finite diff (default), Yang2000 analytical, or fd
+      --fd_scheme TYPE          STK2004 finite difference (central/forward, default: central)
       --cache_mode TYPE         Transition-probability cache mode (diag/full, default: diag)
 
     MCMCTree Options:

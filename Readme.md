@@ -80,7 +80,7 @@ mcmctree mcmctree.ctl
 - `--outdir <dir>`: output directory
 
 ### Optional
-- `--hessian_type <STK2004|fd>`: Hessian estimator (default: `STK2004`)
+- `--hessian_type <STK2004|Yang2000|fd>`: Hessian estimator (default: `STK2004`). STK2004 uses finite-difference per-pattern scores; Yang2000 uses analytical derivatives.
 - `--cpu <int>`: threads (default: 1)
 - `--phylo_prog <iqtree|phyml>`: phylogeny engine (default: `iqtree`)
 - `--pmsf`: enable PMSF approximation for mixture models

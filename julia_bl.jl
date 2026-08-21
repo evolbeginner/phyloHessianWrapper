@@ -657,7 +657,7 @@ end
 function edge_component_logliks!(
     l0::Matrix{Float64}, lp::Matrix{Float64}, lm::Matrix{Float64},
     ctx::RunCtx, q, bl::Vector{Float64}, block::PatternBlock, r::Float64,
-    logweight::Float64, steps::Vector{Float64}, cache::PTFullCache
+    cache::PTFullCache
 )
     nb, nl = ctx.nb, ctx.nl
     nn = nb.tip + nb.node
@@ -740,20 +740,26 @@ function edge_component_logliks!(
         end
     end
 
-    # Three contractions per edge. All non-focal messages stay unchanged.
+    # One baseline contraction plus an analytic branch score per edge. Since
+    # P(b)=exp(Q*r*b), dP/db = r*Q*P(b); no P(b+eps)/P(b-eps) matrices are
+    # constructed here. `l0` receives the component log likelihood and `lp`
+    # receives its component d(log L)/db score. `lm` is retained as scratch.
     @inbounds for child in 1:nn
         e = edge[child]
         e == 0 && continue
         P0 = get_fullpt_cache!(cache, q, bl[e], r, e, nl)
-        Pp = get_fullpt_cache!(cache, q, bl[e] + steps[e], r, e, nl)
-        Pm = get_fullpt_cache!(cache, q, bl[e] - steps[e], r, e, nl)
-        for (dest, P) in ((l0, P0), (lp, Pp), (lm, Pm))
-            mul!(work, P, @view(inside[:, child, :]))
-            for p in 1:np
-                v = max(dot(@view(edgeoutside[:, child, p]), @view(work[:, p])), 1e-300)
-                x = logweight + edgescale[child, p] + inscale[child, p] + log(v)
-                dest[p, e] = logaddexp2(dest[p, e], x)
-            end
+        mul!(work, P0, @view(inside[:, child, :]))
+        if r != 0.0
+            mul!(tmp, q.Q, work)
+        else
+            fill!(tmp, 0.0)
+        end
+        for p in 1:np
+            v = max(dot(@view(edgeoutside[:, child, p]), @view(work[:, p])), 1e-300)
+            dv = dot(@view(edgeoutside[:, child, p]), @view(tmp[:, p]))
+            l0[p, e] = edgescale[child, p] + inscale[child, p] + log(v)
+            lp[p, e] = r == 0.0 ? 0.0 : r * dv / v
+            lm[p, e] = 0.0
         end
     end
     return nothing
@@ -762,31 +768,48 @@ end
 function directional_score_matrix(bl::Vector{Float64}, pattern2, ctx::RunCtx,
                                   blocks::Vector{PatternBlock}; step_scale::Float64=1e6)
     npat, ne = length(pattern2), ctx.nb.branch
-    steps = (1 .+ bl) ./ step_scale
-    L0 = fill(-Inf, npat, ne); Lp = similar(L0); Lm = similar(L0)
-    fill!(Lp, -Inf); fill!(Lm, -Inf)
+    L0 = fill(-Inf, npat, ne)
+    D = zeros(Float64, npat, ne)
     props = ctx.props ./ sum(ctx.props)
     qs = ctx.q_pis isa AbstractVector ? ctx.q_pis : (ctx.q_pis,)
     nq = length(qs)
     is_lg4 = ctx.sub_model == "LG4M" || ctx.sub_model == "LG4X"
-    cache = PTFullCache()
+    caches = [PTFullCache() for _ in 1:Threads.maxthreadid()]
 
-    for block in blocks
+    Threads.@threads for bi in eachindex(blocks)
+        block = blocks[bi]
+        cache = caches[Threads.threadid()]
+        empty!(cache)
         rows = block.indices
-        a0 = fill(-Inf, length(rows), ne); ap = similar(a0); am = similar(a0)
-        fill!(ap, -Inf); fill!(am, -Inf)
+        a0 = fill(-Inf, length(rows), ne)
+        score = zeros(Float64, length(rows), ne)
+        comp_l = similar(a0); comp_d = similar(a0); scratch = similar(a0)
         if is_lg4
             wk = length(props) == nq ? props : (length(ctx.freqs) == nq ? ctx.freqs ./ sum(ctx.freqs) : fill(1/nq, nq))
             for k in 1:nq
                 r = (length(ctx.Qrs) == nq ? ctx.Qrs[k] : 1.0) * ctx.rs[min(k, length(ctx.rs))]
                 wt = wk[k] * (ctx.inv_info[:is_do_inv] ? 1-ctx.inv_info[:inv_prop] : 1.0)
-                edge_component_logliks!(a0, ap, am, ctx, qs[k], bl, block, r, log(max(wt,1e-300)), steps, cache)
+                edge_component_logliks!(comp_l, comp_d, scratch, ctx, qs[k], bl, block, r, cache)
+                logw = log(max(wt, 1e-300))
+                @inbounds for p in axes(a0, 1), e in 1:ne
+                    term = logw + comp_l[p, e]; old = a0[p, e]; new = logaddexp2(old, term)
+                    score[p, e] = old == -Inf ? exp(term - new) * comp_d[p, e] :
+                        exp(old - new) * score[p, e] + exp(term - new) * comp_d[p, e]
+                    a0[p, e] = new
+                end
             end
         else
             for ri in eachindex(ctx.rs), qi in 1:nq
                 r = (length(ctx.Qrs) == nq ? ctx.Qrs[qi] : 1.0) * ctx.rs[ri]
                 wt = props[ri] * ctx.freqs[qi] * (ctx.inv_info[:is_do_inv] ? 1-ctx.inv_info[:inv_prop] : 1.0)
-                edge_component_logliks!(a0, ap, am, ctx, qs[qi], bl, block, r, log(max(wt,1e-300)), steps, cache)
+                edge_component_logliks!(comp_l, comp_d, scratch, ctx, qs[qi], bl, block, r, cache)
+                logw = log(max(wt, 1e-300))
+                @inbounds for p in axes(a0, 1), e in 1:ne
+                    term = logw + comp_l[p, e]; old = a0[p, e]; new = logaddexp2(old, term)
+                    score[p, e] = old == -Inf ? exp(term - new) * comp_d[p, e] :
+                        exp(old - new) * score[p, e] + exp(term - new) * comp_d[p, e]
+                    a0[p, e] = new
+                end
             end
         end
         # Invariable components have r=0, hence exactly the same value at +/-.
@@ -794,19 +817,147 @@ function directional_score_matrix(bl::Vector{Float64}, pattern2, ctx::RunCtx,
             for qi in 1:nq
                 iw = is_lg4 ? (length(props) == nq ? props[qi] : (length(ctx.freqs) == nq ? ctx.freqs[qi]/sum(ctx.freqs) : 1/nq)) : ctx.freqs[min(qi,end)]
                 wt = ctx.inv_info[:inv_prop] * iw
-                inv0 = fill(-Inf, length(rows), ne); invp=similar(inv0); invm=similar(inv0)
-                fill!(invp,-Inf); fill!(invm,-Inf)
-                edge_component_logliks!(inv0, invp, invm, ctx, qs[qi], bl, block, 0.0, log(max(wt,1e-300)), steps, cache)
+                edge_component_logliks!(comp_l, comp_d, scratch, ctx, qs[qi], bl, block, 0.0, cache)
+                logw = log(max(wt, 1e-300))
                 for p in eachindex(block.invmask), e in 1:ne
                     block.invmask[p] || continue
-                    a0[p,e]=logaddexp2(a0[p,e],inv0[p,e]); ap[p,e]=logaddexp2(ap[p,e],invp[p,e]); am[p,e]=logaddexp2(am[p,e],invm[p,e])
+                    term = logw + comp_l[p, e]; old = a0[p, e]; new = logaddexp2(old, term)
+                    score[p, e] = old == -Inf ? exp(term - new) * comp_d[p, e] :
+                        exp(old - new) * score[p, e] + exp(term - new) * comp_d[p, e]
+                    a0[p, e] = new
                 end
             end
         end
-        L0[rows,:] .= a0; Lp[rows,:] .= ap; Lm[rows,:] .= am
+        L0[rows,:] .= a0; D[rows,:] .= score
     end
-    D = (Lp .- Lm) ./ reshape(2 .* steps, 1, :)
     return D, vec(L0[:,1])
+end
+
+# PMSF variant: Q differs by pattern, so patterns cannot be combined into one
+# block. We still avoid the expensive branch-by-branch full-tree pruning: each
+# pattern/rate component gets one inside pass, one outside pass, and all edge
+# perturbations are evaluated from those cached messages.
+function pmsf_directional_pattern(
+    ctx::RunCtx, q_pis, bl::Vector{Float64}, liks_ori::Matrix{Float64},
+    steps::Vector{Float64}, edge_for_child::Vector{Int},
+    postorder::Vector{Int}, root::Int, cache::PTFullCache
+)
+    nb, nl = ctx.nb, ctx.nl
+    nn = nb.tip + nb.node
+    children = ctx.all_children_vec
+    qs = q_pis isa AbstractVector ? q_pis : (q_pis,)
+    nq = length(qs)
+    is_inv = ctx.inv_info[:is_do_inv] ? is_invariant_site_from_liks(liks_ori, nb) : false
+    props = ctx.props ./ sum(ctx.props)
+    freqs = ctx.freqs
+    steps2 = steps
+
+    l0 = fill(-Inf, nb.branch); lp = similar(l0); lm = similar(l0)
+    fill!(lp, -Inf); fill!(lm, -Inf)
+    inside = Matrix{Float64}(undef, nl, nn)
+    outside = Matrix{Float64}(undef, nl, nn)
+    edgeoutside = Matrix{Float64}(undef, nl, nn)
+    inscale = zeros(Float64, nn); outscale = zeros(Float64, nn); edgescale = zeros(Float64, nn)
+    prod = zeros(Float64, nl); childbuf = zeros(Float64, nl); tmp = zeros(Float64, nl); work = zeros(Float64, nl)
+
+    function one_component!(dest0, destp, destm, q, r, logweight)
+        copyto!(inside, liks_ori); fill!(inscale, 0.0)
+        U, Ui, Lam = q.U, q.U_inv, q.Lambda
+        use_eig = eltype(U) <: Float64 && eltype(Ui) <: Float64 && eltype(Lam) <: Float64
+        fill!(prod, 1.0)
+        for anc in postorder
+            fill!(prod, 1.0); scale = 0.0
+            for c in children[anc]
+                e = edge_for_child[c]
+                if r == 0.0
+                    copyto!(childbuf, @view(inside[:, c]))
+                elseif use_eig
+                    mul!(childbuf, get_fullpt_cache!(cache, q, bl[e], r, e, nl), @view(inside[:, c]))
+                else
+                    mul!(childbuf, exp(q.Q * (bl[e] * r)), @view(inside[:, c]))
+                end
+                @simd for s in 1:nl prod[s] *= childbuf[s] end
+                scale += inscale[c]
+            end
+            z = max(sum(prod), 1e-300)
+            @views inside[:, anc] .= prod ./ z
+            inscale[anc] = scale + log(z)
+        end
+
+        fill!(outside, 0.0); fill!(outscale, 0.0)
+        @views outside[:, root] .= q.Pi
+        for anc in root:nn
+            for focal in children[anc]
+                copyto!(prod, @view(outside[:, anc])); scale = outscale[anc]
+                for sib in children[anc]
+                    sib == focal && continue
+                    e = edge_for_child[sib]
+                    P = get_fullpt_cache!(cache, q, bl[e], r, e, nl)
+                    mul!(childbuf, P, @view(inside[:, sib]))
+                    @simd for s in 1:nl prod[s] *= childbuf[s] end
+                    scale += inscale[sib]
+                end
+                z = max(sum(prod), 1e-300)
+                @views edgeoutside[:, focal] .= prod ./ z
+                edgescale[focal] = scale + log(z)
+                P = get_fullpt_cache!(cache, q, bl[edge_for_child[focal]], r, edge_for_child[focal], nl)
+                mul!(tmp, transpose(P), @view(edgeoutside[:, focal]))
+                z = max(sum(tmp), 1e-300)
+                @views outside[:, focal] .= tmp ./ z
+                outscale[focal] = edgescale[focal] + log(z)
+            end
+        end
+
+        for child in 1:nn
+            e = edge_for_child[child]; e == 0 && continue
+            P0 = get_fullpt_cache!(cache, q, bl[e], r, e, nl)
+            Pp = get_fullpt_cache!(cache, q, bl[e] + steps2[e], r, e, nl)
+            Pm = get_fullpt_cache!(cache, q, bl[e] - steps2[e], r, e, nl)
+            for (dest, P) in ((dest0, P0), (destp, Pp), (destm, Pm))
+                mul!(work, P, @view(inside[:, child]))
+                v = max(dot(@view(edgeoutside[:, child]), work), 1e-300)
+                dest[e] = logaddexp2(dest[e], logweight + edgescale[child] + inscale[child] + log(v))
+            end
+        end
+    end
+
+    for qi in 1:nq
+        q = qs[qi]
+        for ri in eachindex(ctx.rs)
+            r = (length(ctx.Qrs) == nq ? ctx.Qrs[qi] : 1.0) * ctx.rs[ri]
+            wt = props[ri] * freqs[qi] * (ctx.inv_info[:is_do_inv] ? 1 - ctx.inv_info[:inv_prop] : 1.0)
+            one_component!(l0, lp, lm, q, r, log(max(wt, 1e-300)))
+        end
+        if is_inv
+            wt = ctx.inv_info[:inv_prop] * freqs[qi]
+            one_component!(l0, lp, lm, q, 0.0, log(max(wt, 1e-300)))
+        end
+    end
+    (l0, lp, lm)
+end
+
+function pmsf_directional_score_matrix(bl::Vector{Float64}, pattern2, ctx::RunCtx; step_scale::Float64=1e6)
+    npat, ne = length(pattern2), ctx.nb.branch
+    steps = (1 .+ bl) ./ step_scale
+    D = Matrix{Float64}(undef, npat, ne); l0 = Vector{Float64}(undef, npat)
+    nn = ctx.nb.tip + ctx.nb.node; edge_for_child = zeros(Int, nn); e = 0
+    for anc in nn:-1:(ctx.nb.tip + 1), child in ctx.all_children_vec[anc]
+        e += 1; edge_for_child[child] = e
+    end
+    postorder = collect((ctx.nb.tip + ctx.nb.node):-1:(ctx.nb.tip + 1))
+    root = ctx.nb.tip + 1
+    caches = [PTFullCache() for _ in 1:Threads.maxthreadid()]
+    Threads.@threads for i in eachindex(pattern2)
+        cache = caches[Threads.threadid()]
+        empty!(cache)
+        a0, ap, am = pmsf_directional_pattern(ctx, choose_q(ctx, i), bl, pattern2[i][1], steps,
+                                               edge_for_child, postorder, root, cache)
+        l0[i] = a0[1]
+        @inbounds for j in 1:ne
+            D[i, j] = (ap[j] - am[j]) / (2 * steps[j])
+        end
+    end
+    D, l0
 end
 
 ######################################################################
@@ -837,23 +988,13 @@ function hessian_STK2004_fast(
     pattern2,
     ctx::RunCtx;
     cache_mode::Symbol = :diag,
-    fd_scheme::Symbol = :central,   # :forward (default) or :central
+    fd_scheme::Symbol = :central,   # :central (default) or :forward
     step_scale::Float64 = 1e6,
     pattern_blocks::Union{Nothing, Vector{PatternBlock}} = nothing
 )
     nb = ctx.nb
     n_pat = length(pattern2)
     w = Float64[p[2] for p in pattern2]
-
-    # Non-PMSF models share Q across patterns, so directional partials can
-    # evaluate every focal edge without re-pruning the tree.
-    if pattern_blocks !== nothing && !ctx.is_pmsf && fd_scheme === :central
-        D, l0 = directional_score_matrix(bls, pattern2, ctx, pattern_blocks; step_scale=step_scale)
-        g = vec(transpose(D) * w)
-        Dw = D .* reshape(w, :, 1)
-        h = -(transpose(D) * Dw)
-        return (h, g, dot(w, l0), l0)
-    end
 
     shared_caches = [cache_mode === :full ? PTFullCache() : PTDiagCache() for _ in 1:Threads.maxthreadid()]
     loglk_vec = pattern_blocks === nothing ?
@@ -901,6 +1042,43 @@ function hessian_STK2004_fast(
 
     lnL0 = dot(w, l0)
     return (h, g, lnL0, l0)
+end
+
+function hessian_Yang2000(
+    bls::Vector{Float64}, pattern2, ctx::RunCtx;
+    pattern_blocks::Union{Nothing, Vector{PatternBlock}}=nothing
+)
+    w = Float64[p[2] for p in pattern2]
+    D, l0 = ctx.is_pmsf ?
+        pmsf_directional_score_matrix(bls, pattern2, ctx) :
+        directional_score_matrix(bls, pattern2, ctx,
+            something(pattern_blocks, make_pattern_blocks(ctx, pattern2; block_size=256)))
+
+    # The directional passes above are parallel over pattern blocks/sites.
+    # Assemble the weighted OPG explicitly as well, because `julia -t` does
+    # not control the separate BLAS thread pool used by D' * (w .* D).
+    npat, ne = size(D)
+    g = Vector{Float64}(undef, ne)
+    h = Matrix{Float64}(undef, ne, ne)
+    Threads.@threads for i in 1:ne
+        gi = 0.0
+        @inbounds @simd for k in 1:npat
+            gi += w[k] * D[k, i]
+        end
+        g[i] = gi
+
+        @inbounds for j in i:ne
+            hij = 0.0
+            @simd for k in 1:npat
+                hij -= w[k] * D[k, i] * D[k, j]
+            end
+            h[i, j] = hij
+        end
+    end
+    @inbounds for i in 2:ne, j in 1:(i - 1)
+        h[i, j] = h[j, i]
+    end
+    return (h, g, dot(w, l0), l0)
 end
 
 
@@ -1142,7 +1320,7 @@ end
 function main(ctx::RunCtx)
     nb = ctx.nb
     pattern2 = get_liks_pattern(ctx.pattern, ctx.nl, nb)
-    pattern_blocks = ctx.is_pmsf ? nothing : make_pattern_blocks(ctx, pattern2)
+    pattern_blocks = ctx.is_pmsf ? nothing : make_pattern_blocks(ctx, pattern2; block_size=256)
 
     bls_vec = Vector{Vector{Float64}}()
     bls = read_bls_from_branchout_matrix(ctx.branchout_matrix)[1]
@@ -1169,17 +1347,25 @@ function main(ctx::RunCtx)
         g = zeros(length(bls))
 
         lnL_for_compare = lnL0
-        if occursin(r"^(finite_difference|fd|2nd_order|2nd_order_derivative|2nd)$", ctx.hessian_type)
+        htype = lowercase(ctx.hessian_type)
+        if occursin(r"^(finite_difference|fd|2nd_order|2nd_order_derivative|2nd)$", htype)
             h = hessian_fd(bls, sum_phylo_log_lk2, nb.branch)
             _, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx;
                 cache_mode=cache_mode, fd_scheme=ctx.fd_scheme, pattern_blocks=pattern_blocks)
             g = g_stk
             # g = calculate_gradient(bls, sum_phylo_log_lk2)
-        else
+        elseif htype == "stk2004"
             h, g_stk, lnL0_stk, _ = hessian_STK2004_fast(bls, pattern2, ctx;
                 cache_mode=cache_mode, fd_scheme=ctx.fd_scheme, pattern_blocks=pattern_blocks)
             g = g_stk
             lnL_for_compare = lnL0_stk
+        elseif htype == "yang2000"
+            h, g_yang, lnL0_yang, _ = hessian_Yang2000(bls, pattern2, ctx;
+                pattern_blocks=pattern_blocks)
+            g = g_yang
+            lnL_for_compare = lnL0_yang
+        else
+            error("Unknown --hessian_type $(ctx.hessian_type). Use STK2004, Yang2000, or fd.")
         end
         g_mcmctree = g[new_bl_order]
 
@@ -1278,4 +1464,3 @@ if abspath(PROGRAM_FILE) == @__FILE__
     ctx = get_args_refactored()
     main(ctx)
 end
-

@@ -90,11 +90,11 @@ function parse_commandline()
 			arg_type = String
 			default = nothing
 		"--hessian_type"
-			help = "STK2004 (default) or fd (finite_difference)"
+			help = "STK2004 finite-difference scores (default), Yang2000 analytical scores, or fd exact finite-difference Hessian"
 			arg_type = String
 			default = "STK2004"
 		"--fd_scheme"
-			help = "forward finite difference (significantly faster for a single thread but slightly faster for multiple threads) or central finite difference (more accurate)"
+			help = "STK2004 score finite difference: central (default) or forward; ignored by Yang2000"
 			arg_type = Symbol
 			default = :central
 		"--cache_mode"
