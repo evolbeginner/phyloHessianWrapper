@@ -2,3 +2,7 @@ codex -a never -s danger-full-access resume 019f02b9-d6af-74e3-a2c3-0898709c1788
 
 # re-calc of lik per branch
 codex -a never -s danger-full-access resume 019f8430-b49f-7613-83dc-7e33e40dcb77
+
+
+##########
+date; outdir=benchmark_haha; export outdir; printf '%s\n' LG+G+I+F EX2+I LG+G LG+C10+PMSF LG+C10+F LG+C10+G+I LG+C10+I LG+C10+R EX2+G+C10 EX2+R+I+F+C10 LG4M LG4M+I+F | parallel --jobs 12 'echo {}; ruby ~/lab-tools/phyloHessian/phyloHessianWrapper.rb -s sim/alignment/combined.fas --reftree ref.tre -m "{}" --outdir "$outdir"/{} --cpu 2 --no_mwopt --force; grep lnL "$outdir"/{}/inBV/info || true; grep BEST "$outdir"/{}/iqtree/iqtree.log || true; echo; echo'; date

@@ -3,7 +3,7 @@ IQ-TREE 3.1.0 built Mar 12 2026
 Input file name: example-dna/sim/alignment/combined.fas
 User tree file name: example-dna/K80+G/iqtree/iqtree.treefile
 Type of analysis: tree reconstruction
-Random seed number: 465390
+Random seed number: 1819
 
 REFERENCES
 ----------
@@ -137,7 +137,7 @@ For more information on using AliSim, please visit: www.iqtree.org/doc/AliSim
 TIME STAMP
 ----------
 
-Date and time: Thu Jul  9 10:38:05 2026
-Total CPU time used: 0.26175 seconds (0h:0m:0s)
-Total wall-clock time used: 0.02767121 seconds (0h:0m:0s)
+Date and time: Fri Aug 21 11:02:06 2026
+Total CPU time used: 0.049296 seconds (0h:0m:0s)
+Total wall-clock time used: 0.0259084 seconds (0h:0m:0s)
 

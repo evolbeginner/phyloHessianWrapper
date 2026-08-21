@@ -1,3 +1,6 @@
+### v1.1.1 - 2026-08-21
+- **Improved:** `parse_tree_seq.R` code cleaned and 3 pkgs no need to load
+
 ### v1.1.0 - 2026-07-22
 - **Improved:** speed-up of `julia_bl.jl` by memorizing P(t) for subtrees during Felsenstein's pruning algo phylo lik calc
 - **Fixed:** fixed a bug in `phyloHessianWrapper.rb` (since v0.6.0 `-m LG+G` will be parsed as only LG)

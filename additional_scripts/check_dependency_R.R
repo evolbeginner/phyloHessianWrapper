@@ -9,7 +9,8 @@ args <- commandArgs(trailingOnly = TRUE)
 
 #####################################################################
 # List of packages to check
-packages_to_check <- c("getopt", "parallel", "seqinr", "phytools", "phangorn")
+#packages_to_check <- c("getopt", "parallel", "seqinr", "phytools", "phangorn")
+packages_to_check <- c("getopt", "seqinr", "phangorn")
 
 # Get a list of all installed packages
 installed_packages <- installed.packages()[, "Package"]

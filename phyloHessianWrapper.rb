@@ -502,12 +502,14 @@ begin
   log("")
 
   # do_bl_my_try.R to generate julia_outdir (basics)
+  puts Time.now
   cmd = "Rscript #{GEN_BASICS} -s #{seqfile} -t #{out_treefile} --cpu #{cpu} --julia_outdir #{outdirs[:basics]} --force --type #{st}"
   execute_command(cmd, "Generating basic info of the tree and alignment ......")
 
   # generate_branch_out_mat.sh
   cmd = "bash #{GEN_BRANCH} -t #{out_treefile} --ref_tree #{ref_treefile} --outdir #{outdirs[:bl]} --force"
   execute_command(cmd, "Parsing the branch order ......")
+  puts Time.now
   
   # julia_bl
   julia_iqtree_arg = is_dna_model ? "--iqtree #{outdirs[:iqtree]}/iqtree.iqtree" : ''
