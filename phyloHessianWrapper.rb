@@ -13,6 +13,7 @@ require "getoptlong"
 require "tempfile"
 require "fileutils"
 require "colorize"
+require "shellwords"
 
 #$LOAD_PATH.unshift(ADD_SCRIPTS_DIR) unless $LOAD_PATH.include?(ADD_SCRIPTS_DIR)
 
@@ -203,6 +204,24 @@ def run_phyml(treefile, model, pmsf, seqfile, outdir, blmin, iqtree_add_arg0, iq
 end
 
 
+def run_p4(treefile, model, seqfile, outdir, prefix, comp, comp_clade,
+           equal_comp_freq, optimizer, refine)
+  args = [
+    'python', File.join(ADD_SCRIPTS_DIR, 'run_unrooted_ndch.py'),
+    '-m', model,
+    '--alignment', File.expand_path(seqfile),
+    '--tree', File.expand_path(treefile),
+    '--pre', File.join(File.expand_path(outdir), prefix),
+    '--optimizer', optimizer
+  ]
+  args.concat(['--comp', comp]) unless comp.empty?
+  args.concat(['--comp_clade', comp_clade]) unless comp_clade.empty?
+  args << '--equal-comp-freq' if equal_comp_freq
+  args << '--refine' if refine
+
+  execute_command(args.shelljoin, "Running p4 ......")
+end
+
 def iqtree_to_phyml(model)
   tokens = model.to_s.strip.split('+').reject(&:empty?)
   sm = nil; order = []; gk = nil; ga = nil; iv = nil
@@ -252,7 +271,7 @@ def show_help
     Required Options:
       -s, --aln FILE            Input sequence alignment file
       -t, --tree FILE           Input tree file
-      -r, --ref_tree FILE       Reference tree file
+      -r, --ref_tree FILE       Reference tree file (not required for p4)
       --outdir DIR              Output directory
 
     Analysis Options:
@@ -264,7 +283,14 @@ def show_help
                                   if not argument, default is 'relaxed'
                                   i.e., the guide tree is the same as the species tree
                                   This can be also specified by -m model+PMSF)
-      --phylo_prog PROGRAM      Phylogeny program (iqtree/phyml, default: iqtree)
+      --phylo_prog PROGRAM      Phylogeny program (iqtree/phyml/p4, default: iqtree)
+      --p4                      Run p4, then stop before Hessian calculation
+      --comp SPEC               p4 branch-path composition specification
+      --comp_clade SPEC         p4 clade composition specification
+      --pre PREFIX              p4 output prefix (default: p4)
+      --optimizer NAME          p4 likelihood optimizer (default: BOBYQA)
+      --equal-comp-freq         Fix p4 composition vectors to equal frequencies
+      --refine                  Refine the p4 optimization
       --cpu N                   Number of CPUs (default: 4)
 
     Branch Length Options:
@@ -289,6 +315,9 @@ def show_help
 
       Run full pipeline:
         #{File.basename($0)} -s alignment.fa -t tree.nwk -r ref_tree.nwk --run_mcmctree --outdir full_analysis
+
+      Run p4 only:
+        #{File.basename($0)} -s alignment.fa -t tree.nwk -m JC+G --p4 --comp_clade "t1,t5" --comp "t2,t6|t7;t12,t13|t9" --pre JC --refine --outdir p4_analysis
   HELP
   exit
 end
@@ -327,6 +356,12 @@ hessian_type = 'STK2004'
 fd_scheme = 'central'
 cache_mode = 'diag'
 iqtree_indir = nil
+p4_prefix = 'p4'
+p4_comp = ''
+p4_comp_clade = ''
+p4_equal_comp_freq = false
+p4_optimizer = 'BOBYQA'
+p4_refine = false
 
 outdirs = Hash.new
 
@@ -358,8 +393,15 @@ opts = GetoptLong.new(
   ['--phylo_prog', GetoptLong::REQUIRED_ARGUMENT],
   ['--phyml', GetoptLong::NO_ARGUMENT],
   ['--iqtree', GetoptLong::NO_ARGUMENT],
+  ['--p4', GetoptLong::NO_ARGUMENT],
+  ['--comp', GetoptLong::REQUIRED_ARGUMENT],
+  ['--comp_clade', '--comp-clade', GetoptLong::REQUIRED_ARGUMENT],
+  ['--pre', GetoptLong::REQUIRED_ARGUMENT],
+  ['--optimizer', GetoptLong::REQUIRED_ARGUMENT],
+  ['--equal-comp-freq', GetoptLong::NO_ARGUMENT],
+  ['--refine', GetoptLong::NO_ARGUMENT],
   ['--tree_add_cmd', '--iqtree_add_arg', GetoptLong::REQUIRED_ARGUMENT],
-  ['-h', GetoptLong::NO_ARGUMENT]
+  ['-h', '--help', GetoptLong::NO_ARGUMENT]
 )
 
 show_help() if ARGV.empty?
@@ -414,11 +456,25 @@ opts.each do |opt, value|
       phylo_prog = :phyml
     when '--iqtree'
       phylo_prog = :iqtree
+    when '--p4'
+      phylo_prog = :p4
+    when '--comp'
+      p4_comp = value
+    when '--comp_clade', '--comp-clade'
+      p4_comp_clade = value
+    when '--pre'
+      p4_prefix = value
+    when '--optimizer'
+      p4_optimizer = value
+    when '--equal-comp-freq'
+      p4_equal_comp_freq = true
+    when '--refine'
+      p4_refine = true
     when '--iqtree_indir'
       iqtree_indir = value
     when '--tree_add_cmd', '--iqtree_add_arg'
       tree_add_cmd = value
-    when '-h'
+    when '-h', '--help'
       show_help()
   end
 end
@@ -436,7 +492,12 @@ if model =~ /[+]PMSF/i
   pmsf = 'relaxed'
 end
 
-if ref_treefile.nil?
+if phylo_prog == :p4
+  if treefile.nil?
+    STDERR.puts "-t treefile not given! Exiting ......"
+    exit(1)
+  end
+elsif ref_treefile.nil?
   STDERR.puts "-r ref_treefile not given! Exiting ......"
   exit(1)
 else
@@ -467,6 +528,13 @@ begin
     non_mfm, mfm = parse_model_name(model)
   end
   is_dna_model = true if st == 'DNA'
+
+  if phylo_prog == :p4
+    run_p4(treefile, model, seqfile, outdirs[:p4], p4_prefix, p4_comp,
+           p4_comp_clade, p4_equal_comp_freq, p4_optimizer, p4_refine)
+    STDOUT.puts "Done!"
+    exit(0)
+  end
 
   if not iqtree_indir.nil?
     FileUtils.rm_rf(outdirs[:iqtree])

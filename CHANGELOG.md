@@ -1,3 +1,6 @@
+### v1.3.0 - 2026-08-22
+- **New features:** p4 starts to be integrated
+
 ### v1.2.0 - 2026-08-21
 - **New features:** `--hessian_type Yang2000` added to enable the use of analytical 1st derivative calculation
 
