@@ -40,6 +40,8 @@ Base.@kwdef struct RunCtx
 
     q_pis
     q_pis_sites
+    edge_q_pis::Union{Nothing, Vector{Q_Pi}}
+    root_q_pi::Union{Nothing, Q_Pi}
     is_pmsf::Bool
 
     inv_info::Dict{Symbol, Any}
@@ -246,16 +248,9 @@ function do_phylo_log_lk(
 
     # compute one component log-likelihood given q and scalar rate r
     function comp_loglk(q, r::Float64)
-        Q = q.Q
-        Pi = q.Pi
-        U = q.U
-        Lambda = q.Lambda
-        U_inv = q.U_inv
 
         copyto!(liks, liks_ori)
         fill!(comp, 0.0)
-
-        use_eig = (eltype(U) <: Float64 && eltype(Lambda) <: Float64 && eltype(U_inv) <: Float64)
 
         j = 0
         @inbounds for anc in (nb.tip + nb.node):-1:(1 + nb.tip)
@@ -264,6 +259,9 @@ function do_phylo_log_lk(
 
             for c in children
                 j += 1
+                qe = ctx.edge_q_pis === nothing ? q : ctx.edge_q_pis[j]
+                Q = qe.Q; U = qe.U; Lambda = qe.Lambda; U_inv = qe.U_inv
+                use_eig = (eltype(U) <: Float64 && eltype(Lambda) <: Float64 && eltype(U_inv) <: Float64)
                 @views childlik = liks[:, c]
 
                 if r == 0.0
@@ -274,10 +272,10 @@ function do_phylo_log_lk(
                     childbuf .= exp(Q * t) * childlik
                 else
                     if pt_cache !== nothing && cache_mode === :full
-                        mul!(childbuf, get_fullpt_cache!(pt_cache::PTFullCache, q, bl[j], r, j, nl), childlik)
+                        mul!(childbuf, get_fullpt_cache!(pt_cache::PTFullCache, qe, bl[j], r, j, nl), childlik)
                     elseif pt_cache !== nothing && cache_mode === :diag
                         eigendecom_pt_diag!(childbuf, tmp, U, U_inv, childlik,
-                                            get_diagexp_cache!(pt_cache::PTDiagCache, q, bl[j], r, j, nl))
+                                            get_diagexp_cache!(pt_cache::PTDiagCache, qe, bl[j], r, j, nl))
                     else
                         t = bl[j] * r
                         eigendecom_pt!(childbuf, tmp, U, Lambda, U_inv, childlik, t)
@@ -289,7 +287,8 @@ function do_phylo_log_lk(
                 end
             end
 
-            comp[anc] = anc == (1 + nb.tip) ? dot(Pi, m_prod) : sum(m_prod)
+            root_q = ctx.root_q_pi === nothing ? q : ctx.root_q_pi
+            comp[anc] = anc == (1 + nb.tip) ? dot(root_q.Pi, m_prod) : sum(m_prod)
             invc = 1.0 / max(comp[anc], 1e-300)
             @simd for s in 1:nl
                 liks[s, anc] = m_prod[s] * invc
@@ -438,19 +437,11 @@ function comp_loglk_block!(
     all_children = ctx.all_children_vec
     n_pat = size(block.liks, 3)
 
-    Q = q.Q
-    Pi = q.Pi
-    U = q.U
-    Lambda = q.Lambda
-    U_inv = q.U_inv
-
     liks = copy(block.liks)
     comp = zeros(Float64, nb.tip + nb.node, n_pat)
     childbuf = Matrix{Float64}(undef, nl, n_pat)
     tmp = Matrix{Float64}(undef, nl, n_pat)
     m_prod = ones(Float64, nl, n_pat)
-
-    use_eig = (eltype(U) <: Float64 && eltype(Lambda) <: Float64 && eltype(U_inv) <: Float64)
 
     j = 0
     @inbounds for anc in (nb.tip + nb.node):-1:(1 + nb.tip)
@@ -459,6 +450,9 @@ function comp_loglk_block!(
 
         for c in children
             j += 1
+            qe = ctx.edge_q_pis === nothing ? q : ctx.edge_q_pis[j]
+            Q = qe.Q; U = qe.U; Lambda = qe.Lambda; U_inv = qe.U_inv
+            use_eig = (eltype(U) <: Float64 && eltype(Lambda) <: Float64 && eltype(U_inv) <: Float64)
             childlik = @view liks[:, c, :]
 
             if r == 0.0
@@ -467,10 +461,10 @@ function comp_loglk_block!(
                 t = bl[j] * r
                 mul!(childbuf, exp(Q * t), childlik)
             elseif pt_cache !== nothing && cache_mode === :full
-                mul!(childbuf, get_fullpt_cache!(pt_cache::PTFullCache, q, bl[j], r, j, nl), childlik)
+                mul!(childbuf, get_fullpt_cache!(pt_cache::PTFullCache, qe, bl[j], r, j, nl), childlik)
             elseif pt_cache !== nothing && cache_mode === :diag
                 mul!(tmp, U_inv, childlik)
-                de = get_diagexp_cache!(pt_cache::PTDiagCache, q, bl[j], r, j, nl)
+                de = get_diagexp_cache!(pt_cache::PTDiagCache, qe, bl[j], r, j, nl)
                 for p in 1:n_pat, s in 1:nl
                     tmp[s, p] *= de[s]
                 end
@@ -490,10 +484,11 @@ function comp_loglk_block!(
         end
 
         if anc == (1 + nb.tip)
+            root_q = ctx.root_q_pi === nothing ? q : ctx.root_q_pi
             for p in 1:n_pat
                 v = 0.0
                 for s in 1:nl
-                    v += Pi[s] * m_prod[s, p]
+                    v += root_q.Pi[s] * m_prod[s, p]
                 end
                 comp[anc, p] = v
             end
@@ -1413,18 +1408,64 @@ function get_args_refactored()
     println(now())
 
     # from your existing arg/config environment (readArg.jl)
-    rs, props, Fs, Qrs, freqs, inv_info = get_iqtree_params(iqtree_file, phyml_file)
+    rs, props, Fs, Qrs, freqs, inv_info = get_iqtree_params(iqtree_file, phyml_file, p4_file)
 
     println(now())
     nb, pattern, all_children, cherry_nodes, descendants, site2pattern = read_basics(basics_indir)
     nl = st == "AA" ? 20 : 4
-
-    Qrs, q_pis, q_pis_sites, freqs = get_Qrs_freqs(
-        Fs, Qrs, freqs, is_pmsf, pmsf_file, site2pattern, sub_model, mix_freq_model;
-        seq_type=type, iqtree_file=iqtree_file
-    )
-
     all_children_vec = dict_children_to_vec(all_children, nb.tip + nb.node)
+
+    if p4_file === nothing
+        Qrs, q_pis, q_pis_sites, freqs = get_Qrs_freqs(
+            Fs, Qrs, freqs, is_pmsf, pmsf_file, site2pattern, sub_model, mix_freq_model;
+            seq_type=type, iqtree_file=iqtree_file)
+    else
+        p4 = get_params_from_p4(p4_file)
+        q_pis = Q_Pi[]; q_pis_sites = Vector[]; freqs = Float64[]
+        pis = p4[:Fs]
+        for (i,m) in enumerate(p4[:p4_Qs])
+            push!(q_pis, generate_DNA_Q_from_matrix(m, pis[i]))
+        end
+        all_q_pis = q_pis
+        # Match report assignments to Julia edges by the descendant taxa set;
+        # the two traversals use different edge orders.
+        comp_by_desc = Dict{String,Int}()
+        for (_, _, comp, desc) in p4[:branch_pairs]
+            key = join(sort(split(desc, ',')), ",")
+            comp_by_desc[key] = comp
+        end
+        edge_desc = Dict{Int,String}()
+        for line in readlines(branchout_matrix)
+            parts = split(line, '\t')
+            length(parts) >= 5 || continue
+            startswith(parts[1], "branch") && continue
+            ord = try parse(Int, parts[end]) catch; continue end
+            edge_desc[ord] = parts[2]
+        end
+        edge_q_pis = Q_Pi[]
+        for e in 1:nb.branch
+            desc = edge_desc[e]
+            found = nothing
+            for group in split(desc, ',')
+                key = join(sort(split(group, '-')), ",")
+                if haskey(comp_by_desc, key)
+                    found = comp_by_desc[key]; break
+                end
+            end
+            found === nothing && error("No p4 component assignment for edge descendants $(desc)")
+            push!(edge_q_pis, all_q_pis[found])
+        end
+        length(edge_q_pis) == nb.branch || error("p4 report has insufficient branch assignments")
+        # The artificial root is the split point of the unrooted tree.  Its
+        # equilibrium vector should follow the background component on the
+        # root-adjacent branch.
+        root_q_pi = deepcopy(all_q_pis[1])
+        q_pis = [root_q_pi]
+        freqs = [1.0]
+    end
+
+    # p4 supplies fully optimized component Q matrices and compositions.
+    # Replace the model-generated Q with those matrices when available.
 
     ctx = RunCtx(
         nb = nb,
@@ -1437,6 +1478,8 @@ function get_args_refactored()
         freqs = freqs,
         q_pis = q_pis,
         q_pis_sites = q_pis_sites,
+        edge_q_pis = p4_file === nothing ? nothing : edge_q_pis,
+        root_q_pi = p4_file === nothing ? nothing : root_q_pi,
         is_pmsf = is_pmsf,
         inv_info = inv_info,
         pattern = pattern,

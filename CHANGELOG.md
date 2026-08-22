@@ -1,3 +1,6 @@
+### v1.3.1 - 2026-08-22
+- **Fixed:** p4 corrected for cases where components are not overlapped/intersected at root
+
 ### v1.3.0 - 2026-08-22
 - **New features:** p4 starts to be integrated
 

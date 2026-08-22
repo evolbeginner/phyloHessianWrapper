@@ -1,0 +1,120 @@
+P4 NDCH ANALYSIS REPORT
+======================
+
+Input alignment: /mnt/hd1/home/sishuo/lab-tools/phyloHessian/example-dna/sim/alignment/combined.fas
+Input tree:      /mnt/hd1/home/sishuo/lab-tools/phyloHessian/example-dna/ref.tre
+Requested model: GTR
+Log likelihood:  -5488.8098540262
+Optimizer:       BOBYQA
+Refinement:      newtAndBrentPowell
+Free parameters: 12
+Composition frequencies: independently optimized
+Requested paths: t1,t9|t12
+Requested clades: none
+Unique component 2 branches: 2
+
+COMPOSITION OPTIMIZATION
+------------------------
+
+Component 1
+  free: 1
+  starting A C G T: 0.25 0.25 0.25 0.25
+  optimized A C G T: 0.320561441069 0.285289340933 0.172175075274 0.221974142724
+  maximum absolute change: 0.077824924726
+
+Component 2
+  free: 1
+  starting A C G T: 0.4 0.1 0.1 0.4
+  optimized A C G T: 0.338157850634 0.309995067824 0.129666252458 0.222180829084
+  maximum absolute change: 0.209995067824
+
+RESOLVED COMPONENT 2 PATHS
+--------------------------
+
+Path: t1,t9|t12
+  Left: LCA(t1,t9) = node_13
+  Right: LCA(t12) = t12
+    1. node_13 -> node_14; descendants=t1,t12
+    2. node_14 -> t12; descendants=t12
+
+RESOLVED COMPONENT 2 CLADES
+---------------------------
+
+none
+
+SUBSTITUTION PROCESS
+--------------------
+
+Rate matrix specification: optimized
+Rate matrix free: 1
+Rate values: 0.164381639195 0.158600023856 0.197920173977 0.15646901195 0.165446524877 0.157182626144
+Invariant proportion: 0; free=0
+Gamma categories: 4
+Gamma alpha: 300; free=1
+Gamma rates: 0.927595926908 0.980314949506 1.01778025212 1.07430887147
+
+Q MATRICES
+----------
+
+Component 1; rows/columns A C G T
+  A   -0.95209628   0.37795123   0.22007486   0.35407019
+  C    0.42467970  -0.93777385   0.21711785   0.29597631
+  G    0.40974290   0.35975828  -1.05069375   0.28119257
+  T    0.51132645   0.38039965   0.21810807  -1.10983416
+
+Component 2; rows/columns A C G T
+  A   -0.94253792   0.41585084   0.16782618   0.35886090
+  C    0.45363053  -0.91918272   0.16557120   0.29998099
+  G    0.43767548   0.39583357  -1.11850627   0.28499722
+  T    0.54618408   0.41854478   0.16632633  -1.13105518
+
+MAXIMUM-LIKELIHOOD TREE
+-----------------------
+
+Optimized branch lengths:
+((t7:0.208169, (t19:0.134749, t11:0.0461244):0.249968):0.0768695, (t2:0.234128, (t13:0.0569315, t18:0.038175):0.208418):0.117098, ((((t1:0.127676, t12:0.160965):0.110227, t9:0.247562):0.311827, t5:0.6125):0.0798466, (((t17:0.313842, (t14:0.302665, t10:0.356206):0.0631116):0.0880012, t6:0.527599):0.168848, ((t20:0.411459, (t16:1e-08, t8:0.0100059):0.273846):0.062564, (t15:0.284862, (t3:0.000475874, t4:0.016353):0.268956):0.107198):0.076991):0.00431871):0.137752);
+
+Components encoded as branch lengths:
+((t7:1, (t19:1, t11:1):1):1, (t2:1, (t13:1, t18:1):1):1, ((((t1:1, t12:2):2, t9:1):1, t5:1):1, (((t17:1, (t14:1, t10:1):1):1, t6:1):1, ((t20:1, (t16:1, t8:1):1):1, (t15:1, (t3:1, t4:1):1):1):1):1):1);
+
+BRANCH COMPONENT ASSIGNMENTS
+----------------------------
+
+parent -> child  component  length  descendant_taxa  selected_by
+node_0 -> node_1  1  0.0768695055619  t11,t19,t7  background
+node_1 -> t7  1  0.208169203947  t7  background
+node_1 -> node_3  1  0.249967554819  t11,t19  background
+node_3 -> t19  1  0.134748826081  t19  background
+node_3 -> t11  1  0.0461244393901  t11  background
+node_0 -> node_6  1  0.11709817671  t13,t18,t2  background
+node_6 -> t2  1  0.234128465541  t2  background
+node_6 -> node_8  1  0.208418347051  t13,t18  background
+node_8 -> t13  1  0.0569314990282  t13  background
+node_8 -> t18  1  0.0381750169575  t18  background
+node_0 -> node_11  1  0.137751814393  t1,t10,t12,t14,t15,t16,t17,t20,t3,t4,t5,t6,t8,t9  background
+node_11 -> node_12  1  0.0798465792837  t1,t12,t5,t9  background
+node_12 -> node_13  1  0.311826520399  t1,t12,t9  background
+node_13 -> node_14  2  0.110226882762  t1,t12  path 't1,t9|t12'
+node_14 -> t1  1  0.127676241108  t1  background
+node_14 -> t12  2  0.160965339935  t12  path 't1,t9|t12'
+node_13 -> t9  1  0.247561976832  t9  background
+node_12 -> t5  1  0.612500408296  t5  background
+node_11 -> node_19  1  0.00431871456726  t10,t14,t15,t16,t17,t20,t3,t4,t6,t8  background
+node_19 -> node_20  1  0.168848323426  t10,t14,t17,t6  background
+node_20 -> node_21  1  0.0880012496009  t10,t14,t17  background
+node_21 -> t17  1  0.313841861199  t17  background
+node_21 -> node_23  1  0.0631115737198  t10,t14  background
+node_23 -> t14  1  0.302664801551  t14  background
+node_23 -> t10  1  0.356205559144  t10  background
+node_20 -> t6  1  0.527598881847  t6  background
+node_19 -> node_27  1  0.0769909928087  t15,t16,t20,t3,t4,t8  background
+node_27 -> node_28  1  0.0625639568297  t16,t20,t8  background
+node_28 -> t20  1  0.411458585812  t20  background
+node_28 -> node_30  1  0.27384575317  t16,t8  background
+node_30 -> t16  1  1e-08  t16  background
+node_30 -> t8  1  0.0100059261705  t8  background
+node_27 -> node_33  1  0.107198488279  t15,t3,t4  background
+node_33 -> t15  1  0.284862229004  t15  background
+node_33 -> node_35  1  0.268955876498  t3,t4  background
+node_35 -> t3  1  0.000475873959814  t3  background
+node_35 -> t4  1  0.0163529703207  t4  background

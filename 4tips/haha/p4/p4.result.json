@@ -1,0 +1,262 @@
+{
+  "logL": -306.41948438107704,
+  "input": {
+    "alignment": "/mnt/hd1/home/sishuo/lab-tools/phyloHessian/4tips/p4/sim.fa",
+    "tree": "/mnt/hd1/home/sishuo/lab-tools/phyloHessian/4tips/ref.tre"
+  },
+  "output_prefix": "/mnt/hd1/home/sishuo/lab-tools/phyloHessian/4tips/haha/p4/p4",
+  "requested_comp_2_paths": [],
+  "requested_comp_2_branches": [],
+  "requested_comp_2_clades": [
+    "C,D"
+  ],
+  "number_of_unique_comp_2_branches": 2,
+  "composition_optimization": {
+    "equal_frequencies_fixed": false,
+    "frequencies_optimized": true,
+    "optimizer": "BOBYQA",
+    "refined_with_newtAndBrentPowell": false,
+    "p4_number_of_free_model_parameters": 7
+  },
+  "resolved_comp_2_paths": [],
+  "resolved_comp_2_clades": [
+    {
+      "specification": "C,D",
+      "taxa": [
+        "C",
+        "D"
+      ],
+      "lca": "node_3",
+      "lca_descendant_taxa": [
+        "C",
+        "D"
+      ],
+      "number_of_branches": 2,
+      "branches": [
+        {
+          "parent": "node_3",
+          "child": "C",
+          "node_number": 4,
+          "descendant_taxa": [
+            "C"
+          ]
+        },
+        {
+          "parent": "node_3",
+          "child": "D",
+          "node_number": 5,
+          "descendant_taxa": [
+            "D"
+          ]
+        }
+      ]
+    }
+  ],
+  "substitution_model": {
+    "name": "JC",
+    "requested_name": "JC+G",
+    "base_model": "JC",
+    "iqtree_rate_code": "000000",
+    "rate_mode": "gamma",
+    "equal_frequencies_in_iqtree": true,
+    "ndch_frequencies_optimized": true,
+    "equal_comp_frequencies_fixed": false,
+    "invariant_sites": {
+      "proportion": 0.0,
+      "free": 0
+    },
+    "r_matrix": 0,
+    "spec": "ones",
+    "free": 0,
+    "parameter_names": [
+      "AC",
+      "AG",
+      "AT",
+      "CG",
+      "CT",
+      "GT"
+    ],
+    "values": [
+      0.16666666666666666,
+      0.16666666666666666,
+      0.16666666666666666,
+      0.16666666666666666,
+      0.16666666666666666,
+      0.16666666666666666
+    ],
+    "gamma": {
+      "n_categories": 4,
+      "alpha": 1.2762582868165908,
+      "free": 1,
+      "category_frequencies": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "category_rates": [
+        0.18860116425247025,
+        0.5465180372289662,
+        1.0340506498120914,
+        2.230830148706472
+      ]
+    }
+  },
+  "q_state_order": [
+    "A",
+    "C",
+    "G",
+    "T"
+  ],
+  "compositions": {
+    "1": {
+      "free": 1,
+      "starting_values": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "optimized_values": [
+        0.08437361916864042,
+        0.22033595344739745,
+        0.3051340873300039,
+        0.3901563400539582
+      ],
+      "maximum_absolute_change": 0.16562638083135958
+    },
+    "2": {
+      "free": 1,
+      "starting_values": [
+        0.4,
+        0.1,
+        0.1,
+        0.4
+      ],
+      "optimized_values": [
+        0.18331355859334092,
+        0.10717393147928536,
+        0.3775086952734735,
+        0.3320038146539001
+      ],
+      "maximum_absolute_change": 0.27750869527347355
+    }
+  },
+  "q_matrices": {
+    "1": [
+      [
+        -1.309900779230043,
+        0.3152139815489854,
+        0.43652671780853397,
+        0.5581600798725238
+      ],
+      [
+        0.12070542287686314,
+        -1.1153922205579208,
+        0.43652671780853397,
+        0.5581600798725238
+      ],
+      [
+        0.12070542287686314,
+        0.3152139815489854,
+        -0.9940794842983722,
+        0.5581600798725238
+      ],
+      [
+        0.12070542287686314,
+        0.3152139815489854,
+        0.43652671780853397,
+        -0.8724461222343826
+      ]
+    ],
+    "2": [
+      [
+        -1.1630884453811676,
+        0.15263233847121074,
+        0.5376310652926154,
+        0.4728250416173414
+      ],
+      [
+        0.26106700328511173,
+        -1.2715231101950684,
+        0.5376310652926154,
+        0.4728250416173414
+      ],
+      [
+        0.26106700328511173,
+        0.15263233847121074,
+        -0.8865243833736638,
+        0.4728250416173414
+      ],
+      [
+        0.26106700328511173,
+        0.15263233847121074,
+        0.5376310652926154,
+        -0.951330407048938
+      ]
+    ]
+  },
+  "branches": {
+    "A": {
+      "node_number": 1,
+      "parent": "node_0",
+      "length": 0.13574539286533788,
+      "comp": 1,
+      "descendant_taxa": [
+        "A"
+      ],
+      "selection_sources": []
+    },
+    "B": {
+      "node_number": 2,
+      "parent": "node_0",
+      "length": 0.10550235999187729,
+      "comp": 1,
+      "descendant_taxa": [
+        "B"
+      ],
+      "selection_sources": []
+    },
+    "node_3": {
+      "node_number": 3,
+      "parent": "node_0",
+      "length": 0.05933269880904341,
+      "comp": 1,
+      "descendant_taxa": [
+        "C",
+        "D"
+      ],
+      "selection_sources": []
+    },
+    "C": {
+      "node_number": 4,
+      "parent": "node_3",
+      "length": 0.1133255296827061,
+      "comp": 2,
+      "descendant_taxa": [
+        "C"
+      ],
+      "selection_sources": [
+        {
+          "type": "clade",
+          "specification": "C,D"
+        }
+      ]
+    },
+    "D": {
+      "node_number": 5,
+      "parent": "node_3",
+      "length": 0.09749485089292997,
+      "comp": 2,
+      "descendant_taxa": [
+        "D"
+      ],
+      "selection_sources": [
+        {
+          "type": "clade",
+          "specification": "C,D"
+        }
+      ]
+    }
+  }
+}

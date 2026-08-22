@@ -2,8 +2,10 @@ using Distributions, QuadGK
 
 
 ###########################################################
-function get_iqtree_params(iqtree_file, phyml_file)
-	if iqtree_file != nothing
+function get_iqtree_params(iqtree_file, phyml_file, p4_file=nothing)
+	if p4_file != nothing
+		iqtree_params = get_params_from_p4(p4_file)
+	elseif iqtree_file != nothing
 		iqtree_params = get_params_from_iqtree(iqtree_file)
 	elseif phyml_file != nothing
 		iqtree_params = get_params_from_phyml(phyml_file)
@@ -45,6 +47,67 @@ function get_iqtree_params(iqtree_file, phyml_file)
 	println("freqs:\t", freqs)
 	println("Qrs:\t", Qrs)
 	return([rs, props, Fs, Qrs, freqs, inv_info])
+end
+
+# Read the text report emitted by run_unrooted_ndch.py.  p4 reports Q matrices
+# explicitly (rather than IQ-TREE's exchangeability table), so retain them as
+# raw matrices for the caller to construct Q_Pi values.
+function get_params_from_p4(infile)
+    lines = readlines(infile)
+    alpha = nothing; rates = Float64[]; ncat = 1
+    freqs = Vector{Float64}[]; matrices = Matrix{Float64}[]; branch_components = Int[]
+    branch_pairs = Tuple{String,String,Int,String}[]
+    branch_assignments = Dict{String,Int}()
+    inq = false; current = Float64[]; n = 0
+    normalize_desc(desc::AbstractString) = join(sort(split(strip(desc), ',')), ",")
+    for line in lines
+        m = match(r"Gamma categories:\s*(\d+)", line); m !== nothing && (ncat = parse(Int,m[1]))
+        m = match(r"Gamma alpha:\s*([-+0-9.eE]+)", line); m !== nothing && (alpha = parse(Float64,m[1]))
+        m = match(r"Gamma rates:\s*(.*)", line)
+        if m !== nothing
+            rates = parse.(Float64, split(strip(m[1])))
+        end
+        m = match(r"optimized A C G T:\s*(.*)", line)
+        if m !== nothing
+            vals = split(strip(m[1]))
+            length(vals) >= 4 || error("Malformed NDCH composition line in $infile: $line")
+            push!(freqs, parse.(Float64, vals[1:4]))
+        end
+        parts = split(strip(line))
+        if length(parts) >= 7 && parts[2] == "->" && tryparse(Int, parts[4]) !== nothing
+            comp = parse(Int, parts[4]); push!(branch_components, comp)
+            desc = parts[6]
+            push!(branch_pairs, (parts[1], parts[3], comp, desc))
+            branch_assignments[normalize_desc(desc)] = comp
+        end
+        if occursin(r"^Q MATRICES", line)
+            inq = true; continue
+        end
+        if inq
+            m = match(r"^Component\s+\d+; rows/columns", line)
+            if m !== nothing
+                !isempty(current) && push!(matrices, permutedims(reshape(current, n, n)))
+                current = Float64[]; n = 0; continue
+            end
+            vals = match(r"^\s*[ACGT]\s+(.*)", line)
+            if vals !== nothing
+                x = parse.(Float64, split(strip(vals[1])))
+                append!(current, x); n = length(x); continue
+            end
+            if !isempty(current) && (occursin("MAXIMUM-LIKELIHOOD TREE", line))
+                push!(matrices, permutedims(reshape(current, n, n))); current = Float64[]; inq = false
+            end
+        end
+    end
+    !isempty(current) && push!(matrices, permutedims(reshape(current, n, n)))
+    if alpha !== nothing && isempty(rates)
+        rates, props = generate_rs_props_from_alpha(alpha, ncat)
+    else
+        props = fill(1 / max(ncat,1), max(ncat,1)); rates = isempty(rates) ? [1.0] : rates
+    end
+    return Dict(:rs=>rates, :props=>props, :Fs=>freqs, :Qrs=>Float64[], :freqs=>Float64[],
+                :p4_Qs=>matrices, :branch_components=>branch_components,
+                :branch_pairs=>branch_pairs, :branch_assignments=>branch_assignments)
 end
 
 

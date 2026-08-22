@@ -1,0 +1,304 @@
+{
+  "logL": -305.62302286880015,
+  "input": {
+    "alignment": "sim.fa",
+    "tree": "tree.nwk"
+  },
+  "output_prefix": "JC",
+  "requested_comp_2_paths": [],
+  "requested_comp_2_branches": [],
+  "requested_comp_2_clades": [
+    "C,D"
+  ],
+  "number_of_unique_comp_2_branches": 5,
+  "composition_optimization": {
+    "equal_frequencies_fixed": false,
+    "frequencies_optimized": true,
+    "optimizer": "BOBYQA",
+    "refined_with_newtAndBrentPowell": false,
+    "p4_number_of_free_model_parameters": 7
+  },
+  "resolved_comp_2_paths": [],
+  "resolved_comp_2_clades": [
+    {
+      "specification": "C,D",
+      "taxa": [
+        "C",
+        "D"
+      ],
+      "lca": "node_0",
+      "lca_descendant_taxa": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "number_of_branches": 5,
+      "branches": [
+        {
+          "parent": "node_0",
+          "child": "node_1",
+          "node_number": 1,
+          "descendant_taxa": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "parent": "node_1",
+          "child": "A",
+          "node_number": 2,
+          "descendant_taxa": [
+            "A"
+          ]
+        },
+        {
+          "parent": "node_1",
+          "child": "B",
+          "node_number": 3,
+          "descendant_taxa": [
+            "B"
+          ]
+        },
+        {
+          "parent": "node_0",
+          "child": "C",
+          "node_number": 4,
+          "descendant_taxa": [
+            "C"
+          ]
+        },
+        {
+          "parent": "node_0",
+          "child": "D",
+          "node_number": 5,
+          "descendant_taxa": [
+            "D"
+          ]
+        }
+      ]
+    }
+  ],
+  "substitution_model": {
+    "name": "JC",
+    "requested_name": "JC+G",
+    "base_model": "JC",
+    "iqtree_rate_code": "000000",
+    "rate_mode": "gamma",
+    "equal_frequencies_in_iqtree": true,
+    "ndch_frequencies_optimized": true,
+    "equal_comp_frequencies_fixed": false,
+    "invariant_sites": {
+      "proportion": 0.0,
+      "free": 0
+    },
+    "r_matrix": 0,
+    "spec": "ones",
+    "free": 0,
+    "parameter_names": [
+      "AC",
+      "AG",
+      "AT",
+      "CG",
+      "CT",
+      "GT"
+    ],
+    "values": [
+      0.16666666666666666,
+      0.16666666666666666,
+      0.16666666666666666,
+      0.16666666666666666,
+      0.16666666666666666,
+      0.16666666666666666
+    ],
+    "gamma": {
+      "n_categories": 4,
+      "alpha": 0.47786546853984535,
+      "free": 1,
+      "category_frequencies": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "category_rates": [
+        0.029362237935718807,
+        0.2372202933713407,
+        0.8034696636634227,
+        2.929947805029518
+      ]
+    }
+  },
+  "q_state_order": [
+    "A",
+    "C",
+    "G",
+    "T"
+  ],
+  "compositions": {
+    "1": {
+      "free": 1,
+      "starting_values": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "optimized_values": [
+        0.15183338624500686,
+        0.17351749388904297,
+        0.31633549434030706,
+        0.3583136255256431
+      ],
+      "maximum_absolute_change": 0.10831362552564311
+    },
+    "2": {
+      "free": 1,
+      "starting_values": [
+        0.4,
+        0.1,
+        0.1,
+        0.4
+      ],
+      "optimized_values": [
+        1e-13,
+        0.27193058432838924,
+        0.2819287759531166,
+        0.44614063971839407
+      ],
+      "maximum_absolute_change": 0.39999999999990005
+    }
+  },
+  "q_matrices": {
+    "1": [
+      [
+        -1.1806632134995918,
+        0.24153947893144975,
+        0.4403447096771677,
+        0.49877902489097437
+      ],
+      [
+        0.21135481026177,
+        -1.1504785448299122,
+        0.4403447096771677,
+        0.49877902489097437
+      ],
+      [
+        0.21135481026177,
+        0.24153947893144975,
+        -0.9516733140841941,
+        0.49877902489097437
+      ],
+      [
+        0.21135481026177,
+        0.24153947893144975,
+        0.4403447096771677,
+        -0.8932389988703874
+      ]
+    ],
+    "2": [
+      [
+        -1.5443336839034718,
+        0.4199515610619271,
+        0.4353921051661167,
+        0.688990017675428
+      ],
+      [
+        1.5443336839036264e-13,
+        -1.124382122841699,
+        0.4353921051661167,
+        0.688990017675428
+      ],
+      [
+        1.5443336839036264e-13,
+        0.4199515610619271,
+        -1.1089415787375094,
+        0.688990017675428
+      ],
+      [
+        1.5443336839036264e-13,
+        0.4199515610619271,
+        0.4353921051661167,
+        -0.8553436662281982
+      ]
+    ]
+  },
+  "branches": {
+    "node_1": {
+      "node_number": 1,
+      "parent": "node_0",
+      "length": 0.14918947806862748,
+      "comp": 2,
+      "descendant_taxa": [
+        "A",
+        "B"
+      ],
+      "selection_sources": [
+        {
+          "type": "clade",
+          "specification": "C,D"
+        }
+      ]
+    },
+    "A": {
+      "node_number": 2,
+      "parent": "node_1",
+      "length": 0.2182770629763406,
+      "comp": 2,
+      "descendant_taxa": [
+        "A"
+      ],
+      "selection_sources": [
+        {
+          "type": "clade",
+          "specification": "C,D"
+        }
+      ]
+    },
+    "B": {
+      "node_number": 3,
+      "parent": "node_1",
+      "length": 0.06909129106150468,
+      "comp": 2,
+      "descendant_taxa": [
+        "B"
+      ],
+      "selection_sources": [
+        {
+          "type": "clade",
+          "specification": "C,D"
+        }
+      ]
+    },
+    "C": {
+      "node_number": 4,
+      "parent": "node_0",
+      "length": 0.046370512536056216,
+      "comp": 2,
+      "descendant_taxa": [
+        "C"
+      ],
+      "selection_sources": [
+        {
+          "type": "clade",
+          "specification": "C,D"
+        }
+      ]
+    },
+    "D": {
+      "node_number": 5,
+      "parent": "node_0",
+      "length": 0.1707169720691356,
+      "comp": 2,
+      "descendant_taxa": [
+        "D"
+      ],
+      "selection_sources": [
+        {
+          "type": "clade",
+          "specification": "C,D"
+        }
+      ]
+    }
+  }
+}

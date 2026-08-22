@@ -1,0 +1,154 @@
+Executing: python /mnt/hd1/home/sishuo/lab-tools/phyloHessian/additional_scripts/run_unrooted_ndch.py -m JC+G --alignment /mnt/hd1/home/sishuo/lab-tools/phyloHessian/4tips/p4/sim.fa --tree /mnt/hd1/home/sishuo/lab-tools/phyloHessian/4tips/ref.tre --pre /mnt/hd1/home/sishuo/lab-tools/phyloHessian/4tips/haha/p4/p4 --optimizer BOBYQA --comp_clade C,D
+Requested component 2 paths:
+  none
+Requested component 2 clades:
+  C,D
+
+Resolved clade specification: C,D
+  Rooted LCA: node_3
+  Rooted LCA descendants: C,D
+  Selected 2 branches:
+    1. node_3 -> C; descendants=C
+    2. node_3 -> D; descendants=D
+
+Total unique branches assigned to component 2: 2
+Assigning component 2 to node_3 -> C; descendants=C; selected_by=clade 'C,D'
+Assigning component 2 to node_3 -> D; descendants=D; selected_by=clade 'C,D'
+
+Composition settings before modelSanityCheck():
+  comp 1: free=1, values=[0.25, 0.25, 0.25, 0.25]
+  comp 2: free=1, values=[0.4, 0.1, 0.1, 0.4]
+
+Composition settings after modelSanityCheck():
+  comp 1: free=1, values=[0.25, 0.25, 0.25, 0.25]
+  comp 2: free=1, values=[0.4, 0.1, 0.1, 0.4]
+
+Number of free model parameters reported by p4: 7
+Composition frequencies are free and will be optimized.
+
+Tree with model assignments:
++========1:A
+|
+0========2:B
+|
+|        +@@@@@@@@4:C
++========3
+         +@@@@@@@@5:D
+The tree above shows part 0 comps
+    0   =
+    1   @
+    root (node 0) has comp 0, symbol =
+The rate matrix is homogeneous in part 0
+
+
+Optimizing likelihood with BOBYQA ...
+optLogLike = -306.419484
+cpu time 0.03805708885192871 seconds.
+
+Optimized log likelihood: -306.4194843811
+
+Starting and optimized composition vectors:
+
+  Component 1
+    free:      1
+    starting:  [0.25, 0.25, 0.25, 0.25]
+    optimized: [0.08437361916864042, 0.22033595344739745, 0.3051340873300039, 0.3901563400539582]
+    maximum absolute change: 0.165626380831
+
+  Component 2
+    free:      1
+    starting:  [0.4, 0.1, 0.1, 0.4]
+    optimized: [0.18331355859334092, 0.10717393147928536, 0.3775086952734735, 0.3320038146539001]
+    maximum absolute change: 0.277508695273
+
+Substitution model:
+  requested model: JC
+  base model:      JC
+  rate matrix:     0
+  rate spec:       ones
+  rate free:       0
+  rate values:     [0.16666666666666666, 0.16666666666666666, 0.16666666666666666, 0.16666666666666666, 0.16666666666666666, 0.16666666666666666]
+  IQ-TREE rate constraint: 000000
+  p4 rate handling:        gamma
+  invariant proportion: 0; free=0
+  NDCH frequencies: independently optimized
+  Note: the requested base model normally has equal frequencies, but this NDCH analysis overrides that frequency constraint.
+  gamma categories: 4
+  gamma alpha:      1.276258287; free=1
+  gamma frequencies: [0.25, 0.25, 0.25, 0.25]
+  gamma rates:       [0.18860116425247025, 0.5465180372289662, 1.0340506498120914, 2.230830148706472]
+
+Composition components and resulting Q matrices:
+Q row/column order: A C G T
+
+Component 1: free=1
+Frequencies: [0.08437361916864042, 0.22033595344739745, 0.3051340873300039, 0.3901563400539582]
+Resulting Q:
+             A            C            G            T
+A   -1.30990078   0.31521398   0.43652672   0.55816008
+C    0.12070542  -1.11539222   0.43652672   0.55816008
+G    0.12070542   0.31521398  -0.99407948   0.55816008
+T    0.12070542   0.31521398   0.43652672  -0.87244612
+
+Component 2: free=1
+Frequencies: [0.18331355859334092, 0.10717393147928536, 0.3775086952734735, 0.3320038146539001]
+Resulting Q:
+             A            C            G            T
+A   -1.16308845   0.15263234   0.53763107   0.47282504
+C    0.26106700  -1.27152311   0.53763107   0.47282504
+G    0.26106700   0.15263234  -0.88652438   0.47282504
+T    0.26106700   0.15263234   0.53763107  -0.95133041
+
+Branch composition assignments:
+node_0 -> A : comp 1, length=0.1357453929, descendants=A, selected_by=background
+node_0 -> B : comp 1, length=0.10550236, descendants=B, selected_by=background
+node_0 -> node_3 : comp 1, length=0.05933269881, descendants=C,D, selected_by=background
+node_3 -> C : comp 2, length=0.1133255297, descendants=C, selected_by=clade 'C,D'
+node_3 -> D : comp 2, length=0.09749485089, descendants=D, selected_by=clade 'C,D'
+
+Final optimized composition vectors:
+  Component 1: free=1, ACGT=[0.08437361916864042, 0.22033595344739745, 0.3051340873300039, 0.3901563400539582]
+  Component 2: free=1, ACGT=[0.18331355859334092, 0.10717393147928536, 0.3775086952734735, 0.3320038146539001]
+
+Analysis results written to:
+  Maximum-likelihood tree: /mnt/hd1/home/sishuo/lab-tools/phyloHessian/4tips/haha/p4/p4.treefile
+  Component-labeled tree: /mnt/hd1/home/sishuo/lab-tools/phyloHessian/4tips/haha/p4/p4.comp.treefile
+  JSON results:            /mnt/hd1/home/sishuo/lab-tools/phyloHessian/4tips/haha/p4/p4.result.json
+  NDCH report:             /mnt/hd1/home/sishuo/lab-tools/phyloHessian/4tips/haha/p4/p4.ndch
+
+Deactivated Conda environment; continuing with base
+Executing: Rscript /mnt/hd1/home/sishuo/lab-tools/phyloHessian/parse_tree_seq.R -s 4tips/p4/sim.fa -t 4tips/haha/p4/p4.treefile --cpu 2 --julia_outdir 4tips/haha/julia --force --type DNA
+Alignment length: 100 
+No. of site patterns: 100 
+Executing: bash /mnt/hd1/home/sishuo/lab-tools/phyloHessian/additional_scripts/generate_branch_out_mat.sh -t 4tips/haha/p4/p4.treefile --ref_tree 4tips/ref.tre --outdir 4tips/haha/bl --force
+Rscript /mnt/hd1/home/sishuo/lab-tools/phyloHessian/additional_scripts/align_bl.R 4tips/haha/p4/p4.treefile 4tips/haha/bl/branch_out > 4tips/haha/bl/branch_out.matrix
+Executing: julia -t 2 /mnt/hd1/home/sishuo/lab-tools/phyloHessian/julia_bl.jl --basics_indir 4tips/haha/julia --st DNA --tree 4tips/haha/p4/p4.treefile -b 4tips/haha/bl/branch_out.matrix -m JC+G --mfm nothing --outdir 4tips/haha/inBV --force  --iqtree /iqtree.iqtree --hessian_type STK2004 --fd_scheme central --cache_mode diag 2>4tips/haha/error
+ERROR: Command failed with status 1: julia -t 2 /mnt/hd1/home/sishuo/lab-tools/phyloHessian/julia_bl.jl --basics_indir 4tips/haha/julia --st DNA --tree 4tips/haha/p4/p4.treefile -b 4tips/haha/bl/branch_out.matrix -m JC+G --mfm nothing --outdir 4tips/haha/inBV --force  --iqtree /iqtree.iqtree --hessian_type STK2004 --fd_scheme central --cache_mode diag 2>4tips/haha/error
+ERROR: 
+2026-08-22T12:29:41.776
+ERROR: LoadError: SystemError: opening file "/iqtree.iqtree": No such file or directory
+Stacktrace:
+  [1] systemerror(p::String, errno::Int32; extrainfo::Nothing)
+    @ Base ./error.jl:176
+  [2] systemerror
+    @ ./error.jl:175 [inlined]
+  [3] open(fname::String; lock::Bool, read::Bool, write::Nothing, create::Nothing, truncate::Nothing, append::Nothing)
+    @ Base ./iostream.jl:293
+  [4] open
+    @ ./iostream.jl:275 [inlined]
+  [5] open(fname::String, mode::String; lock::Bool)
+    @ Base ./iostream.jl:356
+  [6] open
+    @ ./iostream.jl:355 [inlined]
+  [7] get_params_from_iqtree(infile::String)
+    @ Main ~/lab-tools/phyloHessian/lib-julia/util.jl:281
+  [8] get_iqtree_params(iqtree_file::String, phyml_file::Nothing, p4_file::Nothing)
+    @ Main ~/lab-tools/phyloHessian/lib-julia/util.jl:9
+  [9] get_args_refactored()
+    @ Main ~/lab-tools/phyloHessian/julia_bl.jl:1411
+ [10] top-level scope
+    @ ~/lab-tools/phyloHessian/julia_bl.jl:1507
+in expression starting at /mnt/hd1/home/sishuo/lab-tools/phyloHessian/julia_bl.jl:1506
+ERROR: Fatal error: Command execution failed
+ERROR: phyloHessianWrapper.rb:99:in `execute_command'
+phyloHessianWrapper.rb:600:in `<main>'

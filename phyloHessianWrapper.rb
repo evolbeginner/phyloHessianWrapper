@@ -101,6 +101,25 @@ def execute_command(cmd, cmd_stdout=nil)
   output
 end
 
+def deactivate_conda_environment
+  return if ENV.fetch('CONDA_SHLVL', '0').to_i <= 0
+
+  deactivated_env = {}
+  IO.popen(
+    ['bash', '-c', 'source "$(dirname "$(dirname "$CONDA_EXE")")/etc/profile.d/conda.sh" && conda deactivate && env -0'],
+    'rb'
+  ) do |io|
+    io.read.split("\0").each do |entry|
+      key, value = entry.split('=', 2)
+      deactivated_env[key] = value unless value.nil?
+    end
+  end
+  raise 'Failed to deactivate the current Conda environment' unless $?.success?
+
+  ENV.replace(deactivated_env)
+  log("Deactivated Conda environment; continuing with #{ENV['CONDA_DEFAULT_ENV'] || 'no active environment'}")
+end
+
 def parse_rooted_tree()
   message = "Have you parsed the rooted species tree into a unrooted tree in PAML's format by 'additional_scripts/paml_order_unroot.R rooted.tre unrooted.tre'?"
   STDERR.puts message.blue
@@ -287,7 +306,6 @@ def show_help
       --p4                      Run p4, then stop before Hessian calculation
       --comp SPEC               p4 branch-path composition specification
       --comp_clade SPEC         p4 clade composition specification
-      --pre PREFIX              p4 output prefix (default: p4)
       --optimizer NAME          p4 likelihood optimizer (default: BOBYQA)
       --equal-comp-freq         Fix p4 composition vectors to equal frequencies
       --refine                  Refine the p4 optimization
@@ -462,8 +480,6 @@ opts.each do |opt, value|
       p4_comp = value
     when '--comp_clade', '--comp-clade'
       p4_comp_clade = value
-    when '--pre'
-      p4_prefix = value
     when '--optimizer'
       p4_optimizer = value
     when '--equal-comp-freq'
@@ -529,12 +545,6 @@ begin
   end
   is_dna_model = true if st == 'DNA'
 
-  if phylo_prog == :p4
-    run_p4(treefile, model, seqfile, outdirs[:p4], p4_prefix, p4_comp,
-           p4_comp_clade, p4_equal_comp_freq, p4_optimizer, p4_refine)
-    STDOUT.puts "Done!"
-    exit(0)
-  end
 
   if not iqtree_indir.nil?
     FileUtils.rm_rf(outdirs[:iqtree])
@@ -564,12 +574,17 @@ begin
         run_phyml(File.basename(treefile), model, pmsf, File.basename(seqfile), outdirs[:phyml], blmin, iqtree_add_arg0, iqtree_add_arg, cpu)
         out_treefile = File.join(outdirs[:phyml], [c,'phy_phyml_tree.txt'].join('.'))
         Dir.chdir(old_wd)
+      when :p4
+        run_p4(treefile, model, seqfile, outdirs[:p4], p4_prefix, p4_comp,
+          p4_comp_clade, p4_equal_comp_freq, p4_optimizer, p4_refine)
+        out_treefile = File.join(outdirs[:p4], 'p4'+'.treefile')
     end
   end
 
   log("")
 
   # do_bl_my_try.R to generate julia_outdir (basics)
+  deactivate_conda_environment if phylo_prog == :p4
   puts Time.now
   cmd = "Rscript #{GEN_BASICS} -s #{seqfile} -t #{out_treefile} --cpu #{cpu} --julia_outdir #{outdirs[:basics]} --force --type #{st}"
   execute_command(cmd, "Generating basic info of the tree and alignment ......")

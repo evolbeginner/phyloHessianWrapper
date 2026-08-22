@@ -11,6 +11,7 @@ using ArgParse
 #####################################
 type, indir = nothing, nothing
 iqtree_file = nothing
+p4_file = nothing
 basics_indir = nothing
 branchout_matrix = nothing
 bs_branchout_matrix = nothing
@@ -53,6 +54,10 @@ function parse_commandline()
 			default = nothing
 		"--phyml"
 			help = ".phy_phymls.txt"
+			arg_type = String
+			default = nothing
+		"--p4", "--ndch"
+			help = "p4 NDCH report (.ndch)"
 			arg_type = String
 			default = nothing
 		"--branchout_matrix", "-b"
@@ -143,6 +148,7 @@ basics_indir = opt["basics_indir"]
 treefile = opt["tree"]
 iqtree_file = opt["iqtree"]
 phyml_file = opt["phyml"]
+p4_file = opt["p4"]
 branchout_matrix = opt["branchout_matrix"]
 bs_branchout_matrix = opt["bs_branchout_matrix"]
 model_spec = opt["model"]
@@ -208,6 +214,10 @@ else
 	if phyml_file === nothing
 		phyml_file = replace(treefile, "phy_phyml_tree" => "phy_phyml_stats")
 	end
+end
+
+if p4_file === nothing && iqtree_file !== nothing && endswith(lowercase(iqtree_file), ".ndch")
+	p4_file = iqtree_file
 end
 
 if branchout_matrix === nothing

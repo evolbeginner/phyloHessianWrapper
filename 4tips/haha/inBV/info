@@ -1,0 +1,10 @@
+all_children
+Dict(5 => [1, 2, 6], 6 => [3, 4])
+
+
+basics
+Dict("nb.node" => 2, "nb.tip" => 4)
+
+
+best lnL	-306.4194843331863	
+

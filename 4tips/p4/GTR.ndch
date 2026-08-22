@@ -1,0 +1,91 @@
+P4 NDCH ANALYSIS REPORT
+======================
+
+Input alignment: sim.fa
+Input tree:      tree.nwk
+Requested model: GTR
+Log likelihood:  -299.0646931001
+Optimizer:       BOBYQA
+Refinement:      none
+Free parameters: 12
+Composition frequencies: independently optimized
+Requested paths: none
+Requested clades: C,D
+Unique component 2 branches: 5
+
+COMPOSITION OPTIMIZATION
+------------------------
+
+Component 1
+  free: 1
+  starting A C G T: 0.25 0.25 0.25 0.25
+  optimized A C G T: 0.154325268716 0.163796970452 0.332421328589 0.349456432242
+  maximum absolute change: 0.0994564322425
+
+Component 2
+  free: 1
+  starting A C G T: 0.4 0.1 0.1 0.4
+  optimized A C G T: 1e-13 0.285471963185 0.203837756098 0.510690280717
+  maximum absolute change: 0.4
+
+RESOLVED COMPONENT 2 PATHS
+--------------------------
+
+none
+
+RESOLVED COMPONENT 2 CLADES
+---------------------------
+
+Clade: C,D
+  LCA: node_0
+  LCA descendants: A,B,C,D
+    1. node_0 -> node_1; descendants=A,B
+    2. node_1 -> A; descendants=A
+    3. node_1 -> B; descendants=B
+    4. node_0 -> C; descendants=C
+    5. node_0 -> D; descendants=D
+
+SUBSTITUTION PROCESS
+--------------------
+
+Rate matrix specification: optimized
+Rate matrix free: 1
+Rate values: 0.169729431332 0.0937588061118 0.298657030646 0.299223638986 0.0158374862183 0.122793606706
+Invariant proportion: 0; free=0
+Gamma categories: 4
+Gamma alpha: 0.401326504536; free=1
+Gamma rates: 0.0169062415535 0.18274633326 0.732712084297 3.06763534089
+
+Q MATRICES
+----------
+
+Component 1; rows/columns A C G T
+  A   -1.44110217   0.24528744   0.27498768   0.92082705
+  C    0.23110348  -1.15753495   0.87760092   0.04883055
+  G    0.12766193   0.43242825  -0.93869059   0.37860041
+  T    0.40665121   0.02288782   0.36014461  -0.78968365
+
+Component 2; rows/columns A C G T
+  A   -3.38559314   0.74535526   0.29399463   2.34624325
+  C    0.00000000  -1.06267902   0.93826006   0.12441895
+  G    0.00000000   1.31402026  -2.27868421   0.96466395
+  T    0.00000000   0.06954924   0.38503755  -0.45458679
+
+MAXIMUM-LIKELIHOOD TREE
+-----------------------
+
+Optimized branch lengths:
+((A:0.221613, B:0.118829):0.0722615, C:0.0256741, D:0.153869);
+
+Components encoded as branch lengths:
+((A:2, B:2):2, C:2, D:2);
+
+BRANCH COMPONENT ASSIGNMENTS
+----------------------------
+
+parent -> child  component  length  descendant_taxa  selected_by
+node_0 -> node_1  2  0.0722615184898  A,B  clade 'C,D'
+node_1 -> A  2  0.221612798095  A  clade 'C,D'
+node_1 -> B  2  0.118829147731  B  clade 'C,D'
+node_0 -> C  2  0.0256740882353  C  clade 'C,D'
+node_0 -> D  2  0.153868733717  D  clade 'C,D'

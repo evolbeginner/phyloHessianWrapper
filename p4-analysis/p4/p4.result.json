@@ -1,50 +1,41 @@
 {
-  "logL": -5490.205552718662,
+  "logL": -5488.809854026224,
   "input": {
     "alignment": "/mnt/hd1/home/sishuo/lab-tools/phyloHessian/example-dna/sim/alignment/combined.fas",
     "tree": "/mnt/hd1/home/sishuo/lab-tools/phyloHessian/example-dna/ref.tre"
   },
-  "output_prefix": "/mnt/hd1/home/sishuo/lab-tools/phyloHessian/p4-analysis/p4/JC",
-  "requested_comp_2_paths": [],
-  "requested_comp_2_branches": [],
-  "requested_comp_2_clades": [
-    "t1,t5"
+  "output_prefix": "/mnt/hd1/home/sishuo/lab-tools/phyloHessian/p4-analysis/p4/p4",
+  "requested_comp_2_paths": [
+    "t1,t9|t12"
   ],
-  "number_of_unique_comp_2_branches": 6,
+  "requested_comp_2_branches": [
+    "t1,t9|t12"
+  ],
+  "requested_comp_2_clades": [],
+  "number_of_unique_comp_2_branches": 2,
   "composition_optimization": {
     "equal_frequencies_fixed": false,
     "frequencies_optimized": true,
     "optimizer": "BOBYQA",
     "refined_with_newtAndBrentPowell": true,
-    "p4_number_of_free_model_parameters": 7
+    "p4_number_of_free_model_parameters": 12
   },
-  "resolved_comp_2_paths": [],
-  "resolved_comp_2_clades": [
+  "resolved_comp_2_paths": [
     {
-      "specification": "t1,t5",
-      "taxa": [
+      "specification": "t1,t9|t12",
+      "left_group": "t1,t9",
+      "right_group": "t12",
+      "left_taxa": [
         "t1",
-        "t5"
-      ],
-      "lca": "node_12",
-      "lca_descendant_taxa": [
-        "t1",
-        "t12",
-        "t5",
         "t9"
       ],
-      "number_of_branches": 6,
+      "right_taxa": [
+        "t12"
+      ],
+      "left_lca": "node_13",
+      "right_lca": "t12",
+      "number_of_branches": 2,
       "branches": [
-        {
-          "parent": "node_12",
-          "child": "node_13",
-          "node_number": 13,
-          "descendant_taxa": [
-            "t1",
-            "t12",
-            "t9"
-          ]
-        },
         {
           "parent": "node_13",
           "child": "node_14",
@@ -56,46 +47,23 @@
         },
         {
           "parent": "node_14",
-          "child": "t1",
-          "node_number": 15,
-          "descendant_taxa": [
-            "t1"
-          ]
-        },
-        {
-          "parent": "node_14",
           "child": "t12",
           "node_number": 16,
           "descendant_taxa": [
             "t12"
           ]
-        },
-        {
-          "parent": "node_13",
-          "child": "t9",
-          "node_number": 17,
-          "descendant_taxa": [
-            "t9"
-          ]
-        },
-        {
-          "parent": "node_12",
-          "child": "t5",
-          "node_number": 18,
-          "descendant_taxa": [
-            "t5"
-          ]
         }
       ]
     }
   ],
+  "resolved_comp_2_clades": [],
   "substitution_model": {
-    "name": "JC",
-    "requested_name": "JC+G",
-    "base_model": "JC",
-    "iqtree_rate_code": "000000",
+    "name": "GTR",
+    "requested_name": "GTR+G",
+    "base_model": "GTR",
+    "iqtree_rate_code": "012345",
     "rate_mode": "gamma",
-    "equal_frequencies_in_iqtree": true,
+    "equal_frequencies_in_iqtree": false,
     "ndch_frequencies_optimized": true,
     "equal_comp_frequencies_fixed": false,
     "invariant_sites": {
@@ -103,8 +71,8 @@
       "free": 0
     },
     "r_matrix": 0,
-    "spec": "ones",
-    "free": 0,
+    "spec": "optimized",
+    "free": 1,
     "parameter_names": [
       "AC",
       "AG",
@@ -114,12 +82,12 @@
       "GT"
     ],
     "values": [
-      0.16666666666666666,
-      0.16666666666666666,
-      0.16666666666666666,
-      0.16666666666666666,
-      0.16666666666666666,
-      0.16666666666666666
+      0.16438163919543716,
+      0.15860002385602823,
+      0.19792017397690967,
+      0.15646901195037327,
+      0.16544652487736602,
+      0.15718262614388578
     ],
     "gamma": {
       "n_categories": 4,
@@ -155,12 +123,12 @@
         0.25
       ],
       "optimized_values": [
-        0.3261850900016149,
-        0.275402728560408,
-        0.1606508301622267,
-        0.23776135127575046
+        0.32056144106914636,
+        0.2852893409328648,
+        0.17217507527404474,
+        0.22197414272394408
       ],
-      "maximum_absolute_change": 0.0893491698377733
+      "maximum_absolute_change": 0.07782492472595526
     },
     "2": {
       "free": 1,
@@ -171,65 +139,65 @@
         0.4
       ],
       "optimized_values": [
-        0.3347829540564341,
-        0.3008283840499636,
-        0.17092263139752834,
-        0.1934660304960739
+        0.3381578506338332,
+        0.3099950678243285,
+        0.12966625245820934,
+        0.22218082908362888
       ],
-      "maximum_absolute_change": 0.20653396950392613
+      "maximum_absolute_change": 0.2099950678243285
     }
   },
   "q_matrices": {
     "1": [
       [
-        -0.9162345648765937,
-        0.3744848851281382,
-        0.21844848086116717,
-        0.32330119888728825
+        -0.9520962777781211,
+        0.3779512285941211,
+        0.2200748622408939,
+        0.35407018694310616
       ],
       [
-        0.44353731206033775,
-        -0.9852869918087932,
-        0.21844848086116717,
-        0.32330119888728825
+        0.4246796956935618,
+        -0.9377738521543518,
+        0.21711785038069112,
+        0.29597630608009895
       ],
       [
-        0.44353731206033775,
-        0.3744848851281382,
-        -1.1413233960757643,
-        0.32330119888728825
+        0.40974290193134477,
+        0.3597582770983422,
+        -1.050693746238459,
+        0.28119256720877195
       ],
       [
-        0.44353731206033775,
-        0.3744848851281382,
-        0.21844848086116717,
-        -1.0364706780496433
+        0.5113264453835907,
+        0.38039964590987,
+        0.21810806804593547,
+        -1.1098341593393963
       ]
     ],
     "2": [
       [
-        -0.9102848335151223,
-        0.4116543873332671,
-        0.2338909984559613,
-        0.26473944772589386
+        -0.9425379214093653,
+        0.4158508432714421,
+        0.1678261775816345,
+        0.3588609005562886
       ],
       [
-        0.4581179142285771,
-        -0.9567483604104323,
-        0.2338909984559613,
-        0.26473944772589386
+        0.453630531388415,
+        -0.9191827167182414,
+        0.16557119946869503,
+        0.29998098586113126
       ],
       [
-        0.4581179142285771,
-        0.4116543873332671,
-        -1.1345117492877381,
-        0.26473944772589386
+        0.4376754815937036,
+        0.3958335668380304,
+        -1.1185062654227516,
+        0.28499721699101765
       ],
       [
-        0.4581179142285771,
-        0.4116543873332671,
-        0.2338909984559613,
-        -1.1036633000178055
+        0.546184075868038,
+        0.4185447792303804,
+        0.16632632635615327,
+        -1.1310551814545715
       ]
     ]
   },
@@ -237,7 +205,7 @@
     "node_1": {
       "node_number": 1,
       "parent": "node_0",
-      "length": 0.07745479052477013,
+      "length": 0.07686950556186353,
       "comp": 1,
       "descendant_taxa": [
         "t11",
@@ -249,7 +217,7 @@
     "t7": {
       "node_number": 2,
       "parent": "node_1",
-      "length": 0.20556915809997423,
+      "length": 0.20816920394720465,
       "comp": 1,
       "descendant_taxa": [
         "t7"
@@ -259,7 +227,7 @@
     "node_3": {
       "node_number": 3,
       "parent": "node_1",
-      "length": 0.25201761020894276,
+      "length": 0.249967554819226,
       "comp": 1,
       "descendant_taxa": [
         "t11",
@@ -270,7 +238,7 @@
     "t19": {
       "node_number": 4,
       "parent": "node_3",
-      "length": 0.13569769840886112,
+      "length": 0.1347488260812161,
       "comp": 1,
       "descendant_taxa": [
         "t19"
@@ -280,7 +248,7 @@
     "t11": {
       "node_number": 5,
       "parent": "node_3",
-      "length": 0.04549407034955474,
+      "length": 0.046124439390056955,
       "comp": 1,
       "descendant_taxa": [
         "t11"
@@ -290,7 +258,7 @@
     "node_6": {
       "node_number": 6,
       "parent": "node_0",
-      "length": 0.11518160355364782,
+      "length": 0.11709817671025384,
       "comp": 1,
       "descendant_taxa": [
         "t13",
@@ -302,7 +270,7 @@
     "t2": {
       "node_number": 7,
       "parent": "node_6",
-      "length": 0.23224305357918282,
+      "length": 0.23412846554093816,
       "comp": 1,
       "descendant_taxa": [
         "t2"
@@ -312,7 +280,7 @@
     "node_8": {
       "node_number": 8,
       "parent": "node_6",
-      "length": 0.2064762379258067,
+      "length": 0.20841834705138557,
       "comp": 1,
       "descendant_taxa": [
         "t13",
@@ -323,7 +291,7 @@
     "t13": {
       "node_number": 9,
       "parent": "node_8",
-      "length": 0.05666359030668489,
+      "length": 0.05693149902819776,
       "comp": 1,
       "descendant_taxa": [
         "t13"
@@ -333,7 +301,7 @@
     "t18": {
       "node_number": 10,
       "parent": "node_8",
-      "length": 0.037754671843849584,
+      "length": 0.0381750169574593,
       "comp": 1,
       "descendant_taxa": [
         "t18"
@@ -343,7 +311,7 @@
     "node_11": {
       "node_number": 11,
       "parent": "node_0",
-      "length": 0.1403209023223505,
+      "length": 0.13775181439290998,
       "comp": 1,
       "descendant_taxa": [
         "t1",
@@ -366,7 +334,7 @@
     "node_12": {
       "node_number": 12,
       "parent": "node_11",
-      "length": 0.06896865597123483,
+      "length": 0.07984657928373572,
       "comp": 1,
       "descendant_taxa": [
         "t1",
@@ -379,24 +347,19 @@
     "node_13": {
       "node_number": 13,
       "parent": "node_12",
-      "length": 0.3186336560213224,
-      "comp": 2,
+      "length": 0.3118265203992552,
+      "comp": 1,
       "descendant_taxa": [
         "t1",
         "t12",
         "t9"
       ],
-      "selection_sources": [
-        {
-          "type": "clade",
-          "specification": "t1,t5"
-        }
-      ]
+      "selection_sources": []
     },
     "node_14": {
       "node_number": 14,
       "parent": "node_13",
-      "length": 0.11001728011978484,
+      "length": 0.11022688276235494,
       "comp": 2,
       "descendant_taxa": [
         "t1",
@@ -404,75 +367,60 @@
       ],
       "selection_sources": [
         {
-          "type": "clade",
-          "specification": "t1,t5"
+          "type": "path",
+          "specification": "t1,t9|t12"
         }
       ]
     },
     "t1": {
       "node_number": 15,
       "parent": "node_14",
-      "length": 0.127486339979008,
-      "comp": 2,
+      "length": 0.12767624110752432,
+      "comp": 1,
       "descendant_taxa": [
         "t1"
       ],
-      "selection_sources": [
-        {
-          "type": "clade",
-          "specification": "t1,t5"
-        }
-      ]
+      "selection_sources": []
     },
     "t12": {
       "node_number": 16,
       "parent": "node_14",
-      "length": 0.1609016230815859,
+      "length": 0.16096533993463868,
       "comp": 2,
       "descendant_taxa": [
         "t12"
       ],
       "selection_sources": [
         {
-          "type": "clade",
-          "specification": "t1,t5"
+          "type": "path",
+          "specification": "t1,t9|t12"
         }
       ]
     },
     "t9": {
       "node_number": 17,
       "parent": "node_13",
-      "length": 0.24513106912757443,
-      "comp": 2,
+      "length": 0.24756197683194184,
+      "comp": 1,
       "descendant_taxa": [
         "t9"
       ],
-      "selection_sources": [
-        {
-          "type": "clade",
-          "specification": "t1,t5"
-        }
-      ]
+      "selection_sources": []
     },
     "t5": {
       "node_number": 18,
       "parent": "node_12",
-      "length": 0.6285082569760212,
-      "comp": 2,
+      "length": 0.6125004082955269,
+      "comp": 1,
       "descendant_taxa": [
         "t5"
       ],
-      "selection_sources": [
-        {
-          "type": "clade",
-          "specification": "t1,t5"
-        }
-      ]
+      "selection_sources": []
     },
     "node_19": {
       "node_number": 19,
       "parent": "node_11",
-      "length": 1e-08,
+      "length": 0.004318714567262065,
       "comp": 1,
       "descendant_taxa": [
         "t10",
@@ -491,7 +439,7 @@
     "node_20": {
       "node_number": 20,
       "parent": "node_19",
-      "length": 0.17268822601400005,
+      "length": 0.1688483234261007,
       "comp": 1,
       "descendant_taxa": [
         "t10",
@@ -504,7 +452,7 @@
     "node_21": {
       "node_number": 21,
       "parent": "node_20",
-      "length": 0.08776837796706308,
+      "length": 0.08800124960093073,
       "comp": 1,
       "descendant_taxa": [
         "t10",
@@ -516,7 +464,7 @@
     "t17": {
       "node_number": 22,
       "parent": "node_21",
-      "length": 0.31319879085097563,
+      "length": 0.3138418611993037,
       "comp": 1,
       "descendant_taxa": [
         "t17"
@@ -526,7 +474,7 @@
     "node_23": {
       "node_number": 23,
       "parent": "node_21",
-      "length": 0.0654217533413503,
+      "length": 0.06311157371980518,
       "comp": 1,
       "descendant_taxa": [
         "t10",
@@ -537,7 +485,7 @@
     "t14": {
       "node_number": 24,
       "parent": "node_23",
-      "length": 0.30654408578637815,
+      "length": 0.30266480155057096,
       "comp": 1,
       "descendant_taxa": [
         "t14"
@@ -547,7 +495,7 @@
     "t10": {
       "node_number": 25,
       "parent": "node_23",
-      "length": 0.35503115414334824,
+      "length": 0.3562055591444878,
       "comp": 1,
       "descendant_taxa": [
         "t10"
@@ -557,7 +505,7 @@
     "t6": {
       "node_number": 26,
       "parent": "node_20",
-      "length": 0.5283113238712426,
+      "length": 0.5275988818472322,
       "comp": 1,
       "descendant_taxa": [
         "t6"
@@ -567,7 +515,7 @@
     "node_27": {
       "node_number": 27,
       "parent": "node_19",
-      "length": 0.07776970975547559,
+      "length": 0.07699099280865207,
       "comp": 1,
       "descendant_taxa": [
         "t15",
@@ -582,7 +530,7 @@
     "node_28": {
       "node_number": 28,
       "parent": "node_27",
-      "length": 0.06383710010855681,
+      "length": 0.06256395682965141,
       "comp": 1,
       "descendant_taxa": [
         "t16",
@@ -594,7 +542,7 @@
     "t20": {
       "node_number": 29,
       "parent": "node_28",
-      "length": 0.41552287255963793,
+      "length": 0.4114585858115179,
       "comp": 1,
       "descendant_taxa": [
         "t20"
@@ -604,7 +552,7 @@
     "node_30": {
       "node_number": 30,
       "parent": "node_28",
-      "length": 0.2750612345176088,
+      "length": 0.27384575316958565,
       "comp": 1,
       "descendant_taxa": [
         "t16",
@@ -625,7 +573,7 @@
     "t8": {
       "node_number": 32,
       "parent": "node_30",
-      "length": 0.010041606025615931,
+      "length": 0.010005926170469049,
       "comp": 1,
       "descendant_taxa": [
         "t8"
@@ -635,7 +583,7 @@
     "node_33": {
       "node_number": 33,
       "parent": "node_27",
-      "length": 0.10737625427298172,
+      "length": 0.10719848827850084,
       "comp": 1,
       "descendant_taxa": [
         "t15",
@@ -647,7 +595,7 @@
     "t15": {
       "node_number": 34,
       "parent": "node_33",
-      "length": 0.2847499270536865,
+      "length": 0.2848622290040648,
       "comp": 1,
       "descendant_taxa": [
         "t15"
@@ -657,7 +605,7 @@
     "node_35": {
       "node_number": 35,
       "parent": "node_33",
-      "length": 0.2680323489435391,
+      "length": 0.2689558764976121,
       "comp": 1,
       "descendant_taxa": [
         "t3",
@@ -668,7 +616,7 @@
     "t3": {
       "node_number": 36,
       "parent": "node_35",
-      "length": 0.001346179588609679,
+      "length": 0.0004758739598144906,
       "comp": 1,
       "descendant_taxa": [
         "t3"
@@ -678,7 +626,7 @@
     "t4": {
       "node_number": 37,
       "parent": "node_35",
-      "length": 0.015507747167044726,
+      "length": 0.016352970320738118,
       "comp": 1,
       "descendant_taxa": [
         "t4"
